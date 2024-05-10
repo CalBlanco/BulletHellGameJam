@@ -3,7 +3,10 @@ use bevy::{core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping}, prel
 const MOVE_SPEED: f32 = 125.;
 const L_BOUND: u16 = 500;
 const R_BOUND: u16 = 500;
-const BULLET_DEATH: f32 = 20.;
+const BULLET_DEATH: f32 = 5.;
+const SPAWN_Y: f32 = -200.;
+const SPAWN_X: f32 = 0.;
+
 
 fn main() {
     App::new()
@@ -15,9 +18,36 @@ fn main() {
 }
 
 #[derive(Component)]
+/// Player information / tag
 struct PlayerControlled;
 
 #[derive(Component)]
+/// AI Information
+struct AIControlled {
+    t: EnemyType,   
+}
+
+/// Enemy type enum to determine movement / combat patterns
+enum EnemyType {
+    Melee, // Chase the player attempt to kamakazi them
+    Linear, // shoot a straight shot either directly infront or at the player (maybe even fucking random)
+    Wavy, // Shoot some cos/sin variant shot 
+    Spammer, // shoot massive amounts of shit 
+    Spawner // Shoot some bursts but primarily spawn more of the other types of enemies when killed spawn 2 spawners lol (consequences)
+}
+
+#[derive(Bundle)]
+struct EnemyBundle {
+    sprite_bundle: SpriteBundle,
+    ai_type: AIControlled
+}
+
+impl EnemyBundle {
+    
+}
+
+#[derive(Component)]
+/// Bullet Struct ;)
 struct Bullet
 {
     dir: i8,
@@ -33,6 +63,28 @@ impl Bullet{
         self.tick += time;
     }
 }
+
+#[derive(Bundle)]
+struct BulletBundle {
+    sprite_bundle: SpriteBundle,
+    bullet: Bullet,
+}
+
+/// Bundle to contain the bullet class
+impl BulletBundle{
+    /// Create a new bullet by passing a spawn position, bullet data (direction, fx, fy, and tick start), and a texture image from the Asset loader
+    fn new(spawn_x: f32, spawn_y: f32, bullet: Bullet, asset: Handle<Image>) -> BulletBundle {
+        BulletBundle {
+            sprite_bundle: SpriteBundle {
+                texture: asset,
+                transform: Transform::from_xyz(spawn_x, spawn_y, 0.),
+                ..default()
+            },
+            bullet: bullet
+        }
+    }
+}
+
 
 
 
@@ -50,10 +102,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
 
 
-    commands.spawn(( // Dumpster sprite
+    commands.spawn(( // Player
         SpriteBundle {
             texture: asset_server.load("jet.png"),
-            transform: Transform::from_xyz(100., -100., 0.),
+            transform: Transform::from_xyz(SPAWN_X, SPAWN_Y, 0.),
             ..default()
         },
         PlayerControlled,
@@ -92,22 +144,8 @@ fn sprite_movement(
        
         // Shoot 
         if keycode.just_pressed(KeyCode::Space) {
-            commands.spawn((
-                SpriteBundle {
-                    texture: asset_server.load("rocket.png"),
-                    transform: Transform::from_xyz(transform.translation.x, transform.translation.y, 0.),
-                    ..default()
-                },
-                Bullet {dir: 1, fy: |a| 2.*a + 5., fx: |a: f32| 10.*(a*5.).cos() , tick: 0.},
-            ));
-            commands.spawn((
-                SpriteBundle {
-                    texture: asset_server.load("rocket.png"),
-                    transform: Transform::from_xyz(transform.translation.x, transform.translation.y, 0.),
-                    ..default()
-                },
-                Bullet {dir: 1, fy: |a| 10.*(a*5.).sin(), fx: |a: f32| 10.*(a*5.).cos() , tick: 0.},
-            ));
+            commands.spawn(BulletBundle::new(transform.translation.x, transform.translation.y, Bullet {dir: 1, fy: |_| 3., fx: |a: f32| 10.*(a).cos()  , tick: 0.}, asset_server.load("rocket.png")));
+            commands.spawn( BulletBundle::new(transform.translation.x, transform.translation.y, Bullet {dir: 1, fy: |_| 50., fx: |_| 0. , tick: 0.}, asset_server.load("rocket.png")));
         }
 
         
@@ -127,8 +165,8 @@ fn bullet_movement(
 
         bullet.update(time.delta_seconds());
         
-        transform.translation.y += (bullet.fy)(bullet.tick) * bullet.dir as f32; //
-        transform.translation.x += (bullet.fx)(bullet.tick) * bullet.dir as f32;
+        transform.translation.y += (bullet.fy)(bullet.tick) * bullet.dir as f32; // run the y function
+        transform.translation.x += (bullet.fx)(bullet.tick) * bullet.dir as f32; // run the x function
 
     }
 }
