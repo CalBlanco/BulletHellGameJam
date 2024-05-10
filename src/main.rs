@@ -1,19 +1,26 @@
-use bevy::{core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping}, prelude::*};
+use std::thread::spawn;
 
+use bevy::{core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping}, prelude::*};
+use rand::Rng;
 const MOVE_SPEED: f32 = 125.;
 const L_BOUND: u16 = 500;
 const R_BOUND: u16 = 500;
+const T_BOUND: u16 = 300;
+const B_BOUND: i16 = -200;
 const BULLET_DEATH: f32 = 5.;
 const SPAWN_Y: f32 = -200.;
 const SPAWN_X: f32 = 0.;
+const SHOOT_DELAY: f32 = 1.5;
+
 
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
-        .add_systems(Update, sprite_movement)
-        .add_systems(Update, bullet_movement)
+        .add_systems(FixedUpdate, sprite_movement)
+        .add_systems(FixedUpdate, bullet_movement)
+        .add_systems(FixedUpdate, enemy_control)
         .run();
 }
 
@@ -21,12 +28,8 @@ fn main() {
 /// Player information / tag
 struct PlayerControlled;
 
-#[derive(Component)]
-/// AI Information
-struct AIControlled {
-    t: EnemyType,   
-}
 
+#[derive(Component)]
 /// Enemy type enum to determine movement / combat patterns
 enum EnemyType {
     Melee, // Chase the player attempt to kamakazi them
@@ -36,12 +39,20 @@ enum EnemyType {
     Spawner // Shoot some bursts but primarily spawn more of the other types of enemies when killed spawn 2 spawners lol (consequences)
 }
 
+#[derive(Component)]
+struct Enemy {
+    t: EnemyType,
+    dir: i8,
+    last_shot: f32
+}
+
 #[derive(Bundle)]
 struct EnemyBundle {
     sprite_bundle: SpriteBundle,
-    ai_type: AIControlled
+    enemy: Enemy
 }
 
+/// Create a new enemey providing a spawn location, type and asset to render
 impl EnemyBundle {
     fn new(spawn_x: f32, spawn_y: f32, t: EnemyType, asset: Handle<Image>) -> EnemyBundle{
         EnemyBundle {
@@ -50,7 +61,11 @@ impl EnemyBundle {
                 transform: Transform::from_xyz(spawn_x, spawn_y, 0.),
                 ..default()
             },
-            ai_type: AIControlled {t: t}
+            enemy: Enemy {
+                dir: 1,
+                t: t,
+                last_shot: 0.
+            },
         }
     }
 }
@@ -119,6 +134,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         PlayerControlled,
     ));
+
+    commands.spawn(EnemyBundle::new(0., T_BOUND as f32, EnemyType::Melee, asset_server.load("dump.png") ));
+    commands.spawn(EnemyBundle::new(128., T_BOUND as f32, EnemyType::Spawner, asset_server.load("dump.png") ));
 }
 
 /// The sprite is animated by changing its translation depending on the time that has passed since
@@ -182,10 +200,57 @@ fn bullet_movement(
 
 fn enemy_control(
     time: Res<Time>,
-    mut sprite_position: Query<(Entity, &mut Transform, AIControlled)>,
-    mut commands: Commands
-) {
-    for(e, mut transform) in &mut sprite_position{
+    mut sprite_position: Query<(Entity, &mut Transform, &mut Enemy)>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>
 
+) {
+    for(e, mut transform, mut enemy) in &mut sprite_position{
+        if transform.translation.x <  -(L_BOUND as f32) || transform.translation.x > (R_BOUND as f32) {
+            enemy.dir = enemy.dir * -1;
+            transform.translation.y -= 20.;
+        }
+
+        transform.translation.x += MOVE_SPEED * time.delta_seconds() * enemy.dir as f32;
+
+        
+        enemy.last_shot += time.delta_seconds();
+
+        if enemy.last_shot > SHOOT_DELAY{
+            enemy.last_shot = 0.;
+            let spawn_x = transform.translation.x;
+            let spawn_y = transform.translation.y;
+            match  enemy.t {
+                EnemyType::Melee => {},
+                EnemyType::Linear => {
+                    commands.spawn(BulletBundle::new(spawn_x, spawn_y, Bullet {dir: -1, fy: |_| 20., fx: |_| 0., tick: 0.}, asset_server.load("rocket.png")));
+                },
+                EnemyType::Wavy => {
+                    commands.spawn(BulletBundle::new(spawn_x, spawn_y, Bullet {dir: -1, fy: |_| 4., fx: |a| 10.*a.cos(), tick: 0.}, asset_server.load("rocket.png")));
+                },
+                EnemyType::Spammer => {
+                    commands.spawn(BulletBundle::new(spawn_x, spawn_y, Bullet {dir: -1, fy: |a| 20.*a, fx: |_| 5., tick: 0.}, asset_server.load("rocket.png")));
+                    commands.spawn(BulletBundle::new(spawn_x, spawn_y, Bullet {dir: -1, fy: |a| 20.*a, fx: |_| -5., tick: 0.}, asset_server.load("rocket.png")));
+                    commands.spawn(BulletBundle::new(spawn_x, spawn_y, Bullet {dir: -1, fy: |_| 4., fx: |a| 10.*a.cos(), tick: 0.}, asset_server.load("rocket.png")));
+                
+                },
+                EnemyType::Spawner => {
+                    let rng = rand::thread_rng().gen_range(0..=100);
+                    let spawn_y = T_BOUND as f32;
+                    let spawn_x = 0.;
+                    match rng {
+                        0..=20 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("dump.png")));},
+                        21..=40 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Linear, asset_server.load("dump.png")));},
+                        41..=60 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Wavy, asset_server.load("dump.png")));},
+                        61..=80 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spammer, asset_server.load("dump.png")));},
+                        81..=100 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spawner, asset_server.load("dump.png")));},
+                        _ => ()
+                    }
+                    enemy.last_shot -= 10.;
+                }
+    
+            }
+        }
+        
     }
 }
