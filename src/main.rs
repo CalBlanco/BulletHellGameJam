@@ -43,7 +43,16 @@ struct EnemyBundle {
 }
 
 impl EnemyBundle {
-    
+    fn new(spawn_x: f32, spawn_y: f32, t: EnemyType, asset: Handle<Image>) -> EnemyBundle{
+        EnemyBundle {
+            sprite_bundle: SpriteBundle {
+                texture: asset,
+                transform: Transform::from_xyz(spawn_x, spawn_y, 0.),
+                ..default()
+            },
+            ai_type: AIControlled {t: t}
+        }
+    }
 }
 
 #[derive(Component)]
@@ -116,12 +125,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 /// the last frame.
 fn sprite_movement(
         time: Res<Time>, 
-        mut sprite_position: Query<(&mut PlayerControlled, &mut Transform)>,
+        mut sprite_position: Query<&mut Transform, With<PlayerControlled>>,
         keycode: Res<ButtonInput<KeyCode>>,
         mut commands: Commands,
         asset_server: Res<AssetServer>
     ) {
-    for (_, mut transform) in &mut sprite_position {
+    for mut transform in &mut sprite_position {
        
         // Constrain to bounds of screen
         if transform.translation.x > R_BOUND as f32 {
@@ -171,3 +180,12 @@ fn bullet_movement(
     }
 }
 
+fn enemy_control(
+    time: Res<Time>,
+    mut sprite_position: Query<(Entity, &mut Transform, AIControlled)>,
+    mut commands: Commands
+) {
+    for(e, mut transform) in &mut sprite_position{
+
+    }
+}
