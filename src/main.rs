@@ -1,5 +1,3 @@
-use std::thread::spawn;
-
 use bevy::{core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping}, prelude::*};
 use rand::Rng;
 const MOVE_SPEED: f32 = 125.;
@@ -11,6 +9,7 @@ const BULLET_DEATH: f32 = 5.;
 const SPAWN_Y: f32 = -200.;
 const SPAWN_X: f32 = 0.;
 const SHOOT_DELAY: f32 = 1.5;
+const SPAWN_DELAY: f32 = 10.;
 
 
 
@@ -46,6 +45,7 @@ struct Enemy {
     last_shot: f32
 }
 
+
 #[derive(Bundle)]
 struct EnemyBundle {
     sprite_bundle: SpriteBundle,
@@ -69,6 +69,9 @@ impl EnemyBundle {
         }
     }
 }
+
+
+
 
 #[derive(Component)]
 /// Bullet Struct ;)
@@ -111,7 +114,7 @@ impl BulletBundle{
 
 
 
-
+/// Setup our game world 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(( //Camera with bloom settings enabled
         Camera2dBundle {
@@ -149,7 +152,7 @@ fn sprite_movement(
         asset_server: Res<AssetServer>
     ) {
     for mut transform in &mut sprite_position {
-       
+        
         // Constrain to bounds of screen
         if transform.translation.x > R_BOUND as f32 {
             transform.translation.x -= 50.;
@@ -198,6 +201,8 @@ fn bullet_movement(
     }
 }
 
+
+/// Control enemy movement and behavior 
 fn enemy_control(
     time: Res<Time>,
     mut sprite_position: Query<(Entity, &mut Transform, &mut Enemy)>,
@@ -222,7 +227,7 @@ fn enemy_control(
             let spawn_y = transform.translation.y;
             match  enemy.t {
                 EnemyType::Melee => {},
-                EnemyType::Linear => {
+                EnemyType::Linear => { // |args| expr == fn(args) {expr}
                     commands.spawn(BulletBundle::new(spawn_x, spawn_y, Bullet {dir: -1, fy: |_| 20., fx: |_| 0., tick: 0.}, asset_server.load("rocket.png")));
                 },
                 EnemyType::Wavy => {
@@ -246,7 +251,7 @@ fn enemy_control(
                         81..=100 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spawner, asset_server.load("dump.png")));},
                         _ => ()
                     }
-                    enemy.last_shot -= 10.;
+                    enemy.last_shot -= SPAWN_DELAY; // Set the spawn timer to have a larger delay than the shoot timer
                 }
     
             }
