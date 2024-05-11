@@ -1,4 +1,4 @@
-use bevy::{core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping}, prelude::*};
+use bevy::{core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping}, math::bounding::{Aabb2d, BoundingCircle, IntersectsVolume}, prelude::*};
 use rand::Rng;
 const MOVE_SPEED: f32 = 125.;
 const L_BOUND: u16 = 500;
@@ -35,7 +35,7 @@ enum EnemyType {
     Linear, // shoot a straight shot either directly infront or at the player (maybe even fucking random)
     Wavy, // Shoot some cos/sin variant shot 
     Spammer, // shoot massive amounts of shit 
-    Spawner // Shoot some bursts but primarily spawn more of the other types of enemies when killed spawn 2 spawners lol (consequences)
+    Spawner, // Shoot some bursts but primarily spawn more of the other types of enemies when killed spawn 2 spawners lol (consequences)
 }
 
 #[derive(Component)]
@@ -49,7 +49,8 @@ struct Enemy {
 #[derive(Bundle)]
 struct EnemyBundle {
     sprite_bundle: SpriteBundle,
-    enemy: Enemy
+    enemy: Enemy,
+    collider: Collider
 }
 
 /// Create a new enemey providing a spawn location, type and asset to render
@@ -66,6 +67,7 @@ impl EnemyBundle {
                 t: t,
                 last_shot: 0.
             },
+            collider: Collider
         }
     }
 }
@@ -80,7 +82,8 @@ struct Bullet
     dir: i8,
     fx: fn(f32) -> f32,
     fy: fn(f32) -> f32,
-    tick: f32
+    tick: f32,
+    ply: bool
 
 } // 
 
@@ -112,6 +115,12 @@ impl BulletBundle{
     }
 }
 
+
+#[derive(Component)]
+struct Collider;
+
+#[derive(Event, Default)]
+struct CollisionEvent;
 
 
 /// Setup our game world 
@@ -174,8 +183,8 @@ fn sprite_movement(
        
         // Shoot 
         if keycode.just_pressed(KeyCode::Space) {
-            commands.spawn(BulletBundle::new(transform.translation.x, transform.translation.y, Bullet {dir: 1, fy: |_| 3., fx: |a: f32| 10.*(a).cos()  , tick: 0.}, asset_server.load("rocket.png")));
-            commands.spawn( BulletBundle::new(transform.translation.x, transform.translation.y, Bullet {dir: 1, fy: |_| 50., fx: |_| 0. , tick: 0.}, asset_server.load("rocket.png")));
+            commands.spawn(BulletBundle::new(transform.translation.x, transform.translation.y, Bullet {dir: 1, fy: |_| 3., fx: |a: f32| 10.*(a).cos()  , tick: 0., ply: true}, asset_server.load("rocket.png")));
+            commands.spawn( BulletBundle::new(transform.translation.x, transform.translation.y, Bullet {dir: 1, fy: |_| 50., fx: |_| 0. , tick: 0., ply:true}, asset_server.load("rocket.png")));
         }
 
         
@@ -185,22 +194,54 @@ fn sprite_movement(
 /// Move the bullets 
 fn bullet_movement(
     time: Res<Time>, 
-    mut sprite_position: Query<(Entity, &mut Bullet, &mut Transform)>,
+    mut sprite_position: Query<(Entity, &mut Bullet, &mut Transform), (With<Bullet>, Without<Collider>)>,
+    collider_query: Query<(Entity, &Transform), (With<Collider>, Without<Bullet>)>,
+    player_query: Query<(Entity, &Transform), (With<PlayerControlled>, Without<Bullet>, Without<Collider>)>,
     mut commands: Commands,
 ) {
-    for (e, mut bullet,  mut transform) in &mut sprite_position {
+    for (e, mut bullet,  mut b_transform) in &mut sprite_position { // move each bullet 
+        // want to check to see if this bullet has collided with an collider object
+        for(collider_entity, e_transform) in &collider_query {
+            if !bullet.ply{ break; } // skip checking this bullet because its enemey on enemy
+            let collision = bullet_collision(Aabb2d::new(b_transform.translation.truncate(), b_transform.scale.truncate()/2.), Aabb2d::new(e_transform.translation.truncate(), e_transform.scale.truncate()/2.));
+            
+            if let Some(_) = collision { // collision between enemy and player bullet
+                commands.entity(collider_entity).despawn(); // despawn the enemy for now 
+            }
+        }
+
+        if let Ok((p_ent, p_transform)) = player_query.get_single() {
+            let collision = bullet_collision(Aabb2d::new(b_transform.translation.truncate(), b_transform.scale.truncate()/2.), Aabb2d::new(p_transform.translation.truncate(), p_transform.scale.truncate()/2.));
+        
+            let collision = Some(collision);
+            if !bullet.ply && collision.is_some()  {
+                commands.entity(p_ent).despawn() // player death
+            }
+        }
+
+        
+
+        
         if bullet.tick > BULLET_DEATH  {
             commands.entity(e).despawn();
         }
 
         bullet.update(time.delta_seconds());
         
-        transform.translation.y += (bullet.fy)(bullet.tick) * bullet.dir as f32; // run the y function
-        transform.translation.x += (bullet.fx)(bullet.tick) * bullet.dir as f32; // run the x function
+        b_transform.translation.y += (bullet.fy)(bullet.tick) * bullet.dir as f32; // run the y function
+        b_transform.translation.x += (bullet.fx)(bullet.tick) * bullet.dir as f32; // run the x function
 
     }
 }
 
+/// Check if a bullet has intersected a enemy / bounding box 
+fn bullet_collision(bullet: Aabb2d, enemy: Aabb2d) -> Option<bool> {
+    if !bullet.intersects(&enemy) {
+        return None;
+    }
+
+    Some(true)
+}
 
 /// Control enemy movement and behavior 
 fn enemy_control(
@@ -224,19 +265,19 @@ fn enemy_control(
         if enemy.last_shot > SHOOT_DELAY{
             enemy.last_shot = 0.;
             let spawn_x = transform.translation.x;
-            let spawn_y = transform.translation.y;
+            let spawn_y = transform.translation.y - 30.;
             match  enemy.t {
                 EnemyType::Melee => {},
                 EnemyType::Linear => { // |args| expr == fn(args) {expr}
-                    commands.spawn(BulletBundle::new(spawn_x, spawn_y, Bullet {dir: -1, fy: |_| 20., fx: |_| 0., tick: 0.}, asset_server.load("rocket.png")));
+                    commands.spawn(BulletBundle::new(spawn_x, spawn_y, Bullet {dir: -1, fy: |_| 20., fx: |_| 0., tick: 0., ply: false}, asset_server.load("rocket.png")));
                 },
                 EnemyType::Wavy => {
-                    commands.spawn(BulletBundle::new(spawn_x, spawn_y, Bullet {dir: -1, fy: |_| 4., fx: |a| 10.*a.cos(), tick: 0.}, asset_server.load("rocket.png")));
+                    commands.spawn(BulletBundle::new(spawn_x, spawn_y, Bullet {dir: -1, fy: |_| 4., fx: |a| 10.*a.cos(), tick: 0., ply: false}, asset_server.load("rocket.png")));
                 },
                 EnemyType::Spammer => {
-                    commands.spawn(BulletBundle::new(spawn_x, spawn_y, Bullet {dir: -1, fy: |a| 20.*a, fx: |_| 5., tick: 0.}, asset_server.load("rocket.png")));
-                    commands.spawn(BulletBundle::new(spawn_x, spawn_y, Bullet {dir: -1, fy: |a| 20.*a, fx: |_| -5., tick: 0.}, asset_server.load("rocket.png")));
-                    commands.spawn(BulletBundle::new(spawn_x, spawn_y, Bullet {dir: -1, fy: |_| 4., fx: |a| 10.*a.cos(), tick: 0.}, asset_server.load("rocket.png")));
+                    commands.spawn(BulletBundle::new(spawn_x, spawn_y, Bullet {dir: -1, fy: |a| 20.*a, fx: |_| 5., tick: 0., ply:false}, asset_server.load("rocket.png")));
+                    commands.spawn(BulletBundle::new(spawn_x, spawn_y, Bullet {dir: -1, fy: |a| 20.*a, fx: |_| -5., tick: 0., ply:false}, asset_server.load("rocket.png")));
+                    commands.spawn(BulletBundle::new(spawn_x, spawn_y, Bullet {dir: -1, fy: |_| 4., fx: |a| 10.*a.cos(), tick: 0., ply:false}, asset_server.load("rocket.png")));
                 
                 },
                 EnemyType::Spawner => {
