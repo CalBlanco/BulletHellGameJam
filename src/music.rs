@@ -1,6 +1,8 @@
+
+/* 
 use bevy::prelude::*;
 use super::GameState;
-
+Implement later
 
 pub fn make_plugin(app: &mut App){
     app
@@ -13,4 +15,4 @@ pub fn make_plugin(app: &mut App){
 fn setup_music(){}
 fn setup_game_music(){}
 fn setup_menu_music(){}
-fn play_music(){}
+fn play_music(){} */

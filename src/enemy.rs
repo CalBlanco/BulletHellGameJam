@@ -23,7 +23,7 @@ pub struct CollisionEvent;
 
 
 
-#[derive(Component)]
+#[derive(Component, Copy, Clone)]
 /// Enemy type enum to determine movement / combat patterns
 pub enum EnemyType {
     Melee, // Chase the player attempt to kamakazi them
@@ -33,6 +33,17 @@ pub enum EnemyType {
     Spawner, // Shoot some bursts but primarily spawn more of the other types of enemies when killed spawn 2 spawners lol (consequences)
 }
 
+impl EnemyType {
+    pub fn get_score(&self) -> (u64, u64){
+        match *self {
+            EnemyType::Spawner => {(500, 3)},
+            EnemyType::Spammer => {(400, 2)},
+            EnemyType::Wavy => {(300, 1)},
+            _ => {(50, 0)}
+        }
+    }
+}
+
 #[derive(Component)]
 pub struct Enemy {
     t: EnemyType,
@@ -40,11 +51,17 @@ pub struct Enemy {
     last_shot: f32
 }
 
+impl Enemy{
+    pub fn get_type(&self) -> EnemyType {
+        self.t
+    }
+}
+
 
 #[derive(Bundle)]
 pub struct EnemyBundle {
     sprite_bundle: SpriteBundle,
-    enemy: Enemy,
+    pub enemy: Enemy,
     collider: Collider,
     health: player::Health
 }
@@ -71,6 +88,9 @@ impl EnemyBundle {
             health: player::Health::new(shield_size, health_size)
         }
     }
+
+
+    
 }
 
 
@@ -152,7 +172,7 @@ fn spawn_wave_box(wave_rows: u32, wave_cols: u32, asset_server: &mut Res<AssetSe
         for y in 0..wave_cols {  // 
             
             let spawn_x =  (64. * x as f32 + 32.) - L_BOUND as f32 as f32; 
-            let spawn_y = T_BOUND as f32 + (64 * y) as f32 + 64.;
+            let spawn_y = T_BOUND as f32 + (64 * y) as f32; 
 
             let rng = rand::thread_rng().gen_range(0..=100);
             match rng {
@@ -165,7 +185,7 @@ fn spawn_wave_box(wave_rows: u32, wave_cols: u32, asset_server: &mut Res<AssetSe
         }
     }
 
-    commands.spawn(EnemyBundle::new(0.-L_BOUND as f32, T_BOUND as f32 + 64., EnemyType::Spawner, asset_server.load("enemies/spawner.png"), 400, 100)); // always spawn a spawner in the wave
+    commands.spawn(EnemyBundle::new(0.-L_BOUND as f32, T_BOUND as f32, EnemyType::Spawner, asset_server.load("enemies/spawner.png"), 400, 100)); // always spawn a spawner in the wave
 }
 
 
