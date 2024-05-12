@@ -131,7 +131,7 @@ pub fn sprite_movement(
         }
     }
     else{
-        //game_state.set(GameState::Menu);
+        game_state.set(GameState::Menu); // restart game when player is unfindable (dead)
     }
 }
 
