@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy::prelude::*;
+use bevy::{audio::Volume, prelude::*};
 use rand::Rng;
 
 use crate::{bullet, player};
@@ -126,7 +126,11 @@ pub fn enemy_control(
                     commands.spawn(AudioBundle {
                         source: asset_server.load("sounds/laser.wav"),
                         // auto-despawn the entity when playback finishes
-                        settings: PlaybackSettings::DESPAWN,
+                        settings: PlaybackSettings {
+                            mode: bevy::audio::PlaybackMode::Despawn,
+                            volume: Volume::new(0.5),
+                            ..default()
+                        },
                     });
                 },
                 EnemyType::Wavy => {
@@ -134,7 +138,11 @@ pub fn enemy_control(
                     commands.spawn(AudioBundle {
                         source: asset_server.load("sounds/laser.wav"),
                         // auto-despawn the entity when playback finishes
-                        settings: PlaybackSettings::DESPAWN,
+                        settings: PlaybackSettings {
+                            mode: bevy::audio::PlaybackMode::Despawn,
+                            volume: Volume::new(0.5),
+                            ..default()
+                        },
                     });
                 },
                 EnemyType::Spammer => {
@@ -142,9 +150,13 @@ pub fn enemy_control(
                     commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new( -1, |a| 20.*a,  |_| -5., 0., false, 20), asset_server.load("plasma_red.png")));
                     commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new( -1, |_| 4.,  |a| 10.*a.cos(), 0., false, 20), asset_server.load("plasma_red.png")));
                     commands.spawn(AudioBundle {
-                        source: asset_server.load("sounds/laser.wav"),
+                        source: asset_server.load("sounds/laser_0.wav"),
                         // auto-despawn the entity when playback finishes
-                        settings: PlaybackSettings::DESPAWN,
+                        settings: PlaybackSettings {
+                            mode: bevy::audio::PlaybackMode::Despawn,
+                            volume: Volume::new(0.5),
+                            ..default()
+                        },
                     });
                 
                 },
@@ -156,7 +168,11 @@ pub fn enemy_control(
                     commands.spawn(AudioBundle {
                         source: asset_server.load("sounds/shieldhit.wav"),
                         // auto-despawn the entity when playback finishes
-                        settings: PlaybackSettings::DESPAWN,
+                        settings: PlaybackSettings {
+                            mode: bevy::audio::PlaybackMode::Despawn,
+                            volume: Volume::new(0.5),
+                            ..default()
+                        },
                     });
                 }
     

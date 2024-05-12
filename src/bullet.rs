@@ -1,4 +1,4 @@
-use bevy::{math::bounding::{Aabb2d, IntersectsVolume}, prelude::*};
+use bevy::{audio::Volume, math::bounding::{Aabb2d, IntersectsVolume}, prelude::*};
 
 use crate::{enemy::{self}, game::ScoreBoard, player};
 use super::{T_BOUND, B_BOUND};
@@ -134,7 +134,11 @@ pub fn play_collision_sound(
         commands.spawn(AudioBundle {
             source: asset_server.load("sounds/hit.wav"),
             // auto-despawn the entity when playback finishes
-            settings: PlaybackSettings::DESPAWN,
+            settings: PlaybackSettings {
+                mode: bevy::audio::PlaybackMode::Despawn,
+                volume: Volume::new(0.25),
+                ..default()
+            },
         });
     }
 }

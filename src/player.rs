@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{audio::Volume, prelude::*};
 use std::time::Duration;
 
 
@@ -141,7 +141,11 @@ pub fn sprite_movement(
             commands.spawn(AudioBundle {
                 source: asset_server.load("sounds/laser_0.wav"),
                 // auto-despawn the entity when playback finishes
-                settings: PlaybackSettings::DESPAWN,
+                settings: PlaybackSettings {
+                    mode: bevy::audio::PlaybackMode::Despawn,
+                    volume: Volume::new(0.25),
+                    ..default()
+                },
             });
             commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| 5.*(a).cos()  ,  0.,  true, 60), asset_server.load("plasma_blue.png")));
             commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| -5.*(a).cos()  ,  0.,  true, 60), asset_server.load("plasma_blue.png")));
