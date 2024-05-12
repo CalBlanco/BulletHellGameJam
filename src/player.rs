@@ -146,7 +146,7 @@ pub fn sprite_movement(
         }
     }
     else{
-        println!("Player did not spawn");
+        
     }
 }
 

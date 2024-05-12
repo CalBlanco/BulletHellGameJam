@@ -128,11 +128,10 @@ fn spawn_wave_box(wave_rows: u32, wave_cols: u32, asset_server: &mut Res<AssetSe
 
             let rng = rand::thread_rng().gen_range(0..=100);
             match rng {
-                0..=20 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("enemies/melee.png"), 0, 200));},
-                21..=40 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Linear, asset_server.load("enemies/basic.png"), 100, 50));},
-                41..=60 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Wavy, asset_server.load("enemies/wavy.png"), 200, 100));},
-                61..=80 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spammer, asset_server.load("enemies/spammer.png"), 200, 100));},
-                81..=100 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spawner, asset_server.load("enemies/spawner.png"), 400, 50));},
+                0..=25 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("enemies/melee.png"), 0, 200));},
+                26..=50 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Linear, asset_server.load("enemies/basic.png"), 100, 50));},
+                51..=75 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Wavy, asset_server.load("enemies/wavy.png"), 200, 100));},
+                76..=100 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spammer, asset_server.load("enemies/spammer.png"), 200, 100));},
                 _ => ()
             }
         }
