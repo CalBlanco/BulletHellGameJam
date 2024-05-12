@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use std::time::Duration;
 
 
-use crate::{bullet, enemy};
+use crate::{bullet};
 
 
 
@@ -14,9 +14,15 @@ const SPAWN_Y: f32 = -200.;
 const MOVE_SPEED: f32 = 180.;
 const SHOT_DELAY: f32 = 0.05;
 
+const SHIELD_SIZE: u32 = 400;
+const HEALTH_SIZE: u32 = 200;
+
+
 #[derive(Resource)]
 pub struct ShotTimer(Timer);
 
+
+// TODO: implement a shield reset timer
 
 #[derive(Component)]
 /// Player information / tag
@@ -30,6 +36,8 @@ pub struct PlayerBundle {
     sprite_bundle: SpriteBundle,
     control: PlayerControlled
 }
+
+
 
 
 
@@ -49,6 +57,38 @@ impl PlayerBundle {
 }
 
 
+#[derive(Component)]
+pub struct Health {
+    shield: u32,
+    health: u32,
+    is_alive: bool,
+}
+
+impl Health {
+    /// Create a new health component specifying shield size, and health
+    pub fn new(shield_size: u32, health_size: u32) -> Health {
+        Health {
+            shield: shield_size,
+            health: health_size,
+            is_alive: true,
+            
+        }
+    }
+
+    /// do damage to the entity
+    pub fn damage(&mut self, damage: u32){
+        self.shield = if self.shield > 0 {self.shield - damage} else {0};
+        self.health = if self.shield <=0 {self.health - damage} else {0};
+
+        self.is_alive = if self.health > 0 {true} else {false};
+    }
+
+    // check if this entity is a live
+    pub fn isAlive(&self) -> bool {
+        self.is_alive
+    }
+}
+
 pub fn sprite_movement(
     time: Res<Time>, 
     mut sprite_position: Query<(Entity, &mut Transform), With<PlayerControlled>>,
@@ -62,7 +102,7 @@ pub fn sprite_movement(
     if let Ok((p_ent, mut transform )) = sprite_position.get_single_mut() {
         shot_timer.0.tick(time.delta());
 
-        gizmos.rect_2d(transform.translation.truncate(), 0., Vec2::new(128., 128.), Color::rgb(1.,1.,0.));
+        //gizmos.rect_2d(transform.translation.truncate(), 0., Vec2::new(32., 32.), Color::rgb(1.,1.,0.));
 
         
         if transform.translation.x > R_BOUND as f32 {
@@ -82,11 +122,11 @@ pub fn sprite_movement(
             transform.translation.x +=  move_dist;//if transform.translation.x + move_dist > R_BOUND as f32 {0.} else {move_dist}
         }
     
-        if keycode.just_pressed(KeyCode::KeyS) {
+        if keycode.just_pressed(KeyCode::KeyW) {
             let jump_x = if transform.translation.x - JUMP_SIZE < 0. - L_BOUND as f32 { 0. - L_BOUND as f32 } else {transform.translation.x - JUMP_SIZE};
             transform.translation.x = jump_x;
         }
-        if keycode.just_pressed(KeyCode::KeyW) {
+        if keycode.just_pressed(KeyCode::KeyS) {
             let jump_x = if transform.translation.x + JUMP_SIZE > L_BOUND as f32 { L_BOUND as f32 } else {transform.translation.x + JUMP_SIZE};
             transform.translation.x = jump_x;
         }
@@ -95,8 +135,14 @@ pub fn sprite_movement(
         // Shoot 
         if keycode.pressed(KeyCode::Space) && shot_timer.0.finished() {
             shot_timer.0.reset();
-            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| 10.*(a).cos()  ,  0.,  true), asset_server.load("rocket.png")));
-            commands.spawn( bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new(1, |_| 50., |_| 0. ,  0., true), asset_server.load("rocket.png")));
+            commands.spawn(AudioBundle {
+                source: asset_server.load("sounds/laser_0.wav"),
+                // auto-despawn the entity when playback finishes
+                settings: PlaybackSettings::DESPAWN,
+            });
+            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| 10.*(a).cos()  ,  0.,  true, 20), asset_server.load("plasma_blue.png")));
+            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| -10.*(a).cos()  ,  0.,  true, 20), asset_server.load("plasma_blue.png")));
+            commands.spawn( bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new(1, |_| 50., |_| 0. ,  0., true, 50), asset_server.load("plasma_blue.png")));
         }
     }
     else{
@@ -107,7 +153,7 @@ pub fn sprite_movement(
 
 pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>){
     
-    let asset = asset_server.load("jet.png");
+    let asset = asset_server.load("player.png");
     
     commands.spawn((
         SpriteBundle {
@@ -115,7 +161,9 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>){
             transform: Transform::from_xyz(SPAWN_X, SPAWN_Y, 1.),
             ..default()
         },
-        PlayerControlled)
+        PlayerControlled,
+        Health::new(SHIELD_SIZE, HEALTH_SIZE)
+    )
     );
     commands.insert_resource(ShotTimer(Timer::new(Duration::from_secs_f32(SHOT_DELAY), TimerMode::Repeating)));
 

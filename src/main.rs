@@ -14,15 +14,15 @@ fn main() {
         .add_plugins((
             DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
-                    title: "I am a window!".into(),
-                    name: Some("bevy.app".into()),
-                    resolution: (1920., 1080.).into(),
+                    title: "BH: Elite".into(),
+                    name: Some("BulletHellElite".into()),
+                    resolution: (1040., 960.).into(),
                     present_mode: PresentMode::AutoVsync,
                     // Tells wasm not to override default event handling, like F5, Ctrl+R etc.
                     prevent_default_event_handling: false,
                     window_theme: Some(WindowTheme::Dark),
                     enabled_buttons: bevy::window::EnabledButtons {
-                        maximize: false,
+                        maximize: true,
                         ..Default::default()
                     },
                     // This will spawn an invisible window
@@ -36,11 +36,13 @@ fn main() {
             LogDiagnosticsPlugin::default(),
             FrameTimeDiagnosticsPlugin,
         ))
+        .add_event::<enemy::CollisionEvent>()
         .add_systems(Startup, setup)
         .add_systems(Startup, player::spawn_player)
         .add_systems(Startup, enemy::init_wave)
         .add_systems(FixedUpdate, player::sprite_movement)
         .add_systems(FixedUpdate, bullet::bullet_movement)
+        .add_systems(FixedUpdate, bullet::play_collision_sound)
         .add_systems(FixedUpdate, enemy::enemy_control)
         .run();
 }
@@ -48,6 +50,8 @@ fn main() {
 
 /// Setup our game world 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    
+
     commands.spawn(( //Camera with bloom settings enabled
         Camera2dBundle {
             camera: Camera {

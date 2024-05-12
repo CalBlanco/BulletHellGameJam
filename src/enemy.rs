@@ -16,7 +16,7 @@ const MOVE_SPEED: f32 = 125.;
 pub struct Collider;
 
 #[derive(Event, Default)]
-struct CollisionEvent;
+pub struct CollisionEvent;
 
 
 
@@ -42,12 +42,13 @@ pub struct Enemy {
 pub struct EnemyBundle {
     sprite_bundle: SpriteBundle,
     enemy: Enemy,
-    collider: Collider
+    collider: Collider,
+    health: player::Health
 }
 
 /// Create a new enemey providing a spawn location, type and asset to render
 impl EnemyBundle {
-    pub fn new(spawn_x: f32, spawn_y: f32, t: EnemyType, asset: Handle<Image>) -> EnemyBundle{
+    pub fn new(spawn_x: f32, spawn_y: f32, t: EnemyType, asset: Handle<Image>, shield_size: u32, health_size: u32) -> EnemyBundle{
         EnemyBundle {
             sprite_bundle: SpriteBundle {
                 texture: asset,
@@ -59,7 +60,8 @@ impl EnemyBundle {
                 t: t,
                 last_shot: 0.
             },
-            collider: Collider
+            collider: Collider,
+            health: player::Health::new(shield_size, health_size)
         }
     }
 }
@@ -92,15 +94,15 @@ pub fn enemy_control(
             match  enemy.t {
                 EnemyType::Melee => {},
                 EnemyType::Linear => { // |args| expr == fn(args) {expr}
-                    commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new(-1, |_| 20., |_| 0., 0., false), asset_server.load("rocket.png")));
+                    commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new(-1, |_| 20., |_| 0., 0., false, 20), asset_server.load("plasma_red.png")));
                 },
                 EnemyType::Wavy => {
-                    commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new(-1, |_| 4.,  |a| 10.*a.cos(), 0.,  false), asset_server.load("rocket.png")));
+                    commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new(-1, |_| 4.,  |a| 10.*a.cos(), 0.,  false, 60), asset_server.load("plasma_purple.png")));
                 },
                 EnemyType::Spammer => {
-                    commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new( -1, |a| 20.*a,  |_| 5., 0., false), asset_server.load("rocket.png")));
-                    commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new( -1, |a| 20.*a,  |_| -5., 0., false), asset_server.load("rocket.png")));
-                    commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new( -1, |_| 4.,  |a| 10.*a.cos(), 0., false), asset_server.load("rocket.png")));
+                    commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new( -1, |a| 20.*a,  |_| 5., 0., false, 20), asset_server.load("plasma_red.png")));
+                    commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new( -1, |a| 20.*a,  |_| -5., 0., false, 20), asset_server.load("plasma_red.png")));
+                    commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new( -1, |_| 4.,  |a| 10.*a.cos(), 0., false, 20), asset_server.load("plasma_red.png")));
                 
                 },
                 EnemyType::Spawner => {
@@ -126,11 +128,11 @@ fn spawn_wave_box(wave_rows: u32, wave_cols: u32, asset_server: &mut Res<AssetSe
 
             let rng = rand::thread_rng().gen_range(0..=100);
             match rng {
-                0..=20 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("dump.png")));},
-                21..=40 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Linear, asset_server.load("dump.png")));},
-                41..=60 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Wavy, asset_server.load("dump.png")));},
-                61..=80 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spammer, asset_server.load("dump.png")));},
-                81..=100 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spawner, asset_server.load("dump.png")));},
+                0..=20 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("enemies/melee.png"), 0, 200));},
+                21..=40 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Linear, asset_server.load("enemies/basic.png"), 100, 50));},
+                41..=60 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Wavy, asset_server.load("enemies/wavy.png"), 200, 100));},
+                61..=80 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spammer, asset_server.load("enemies/spammer.png"), 200, 100));},
+                81..=100 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spawner, asset_server.load("enemies/spawner.png"), 400, 50));},
                 _ => ()
             }
         }
