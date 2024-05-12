@@ -1,12 +1,15 @@
 use bevy::{math::bounding::{Aabb2d, IntersectsVolume}, prelude::*};
 
-use crate::{player, enemy};
+use crate::{enemy::{self}, game::ScoreBoard, player};
 use super::{T_BOUND, B_BOUND};
 
 const BULLET_DEATH: f32 = 5.;
 
 #[derive(Event)]
-pub struct CollisionEvent(Entity, i64);
+pub struct CollisionEvent(Entity, i64, bool);
+
+#[derive(Event)]
+pub struct ScoreEvent(u64, u64);  // add to score on a event (add this event to event queue when a unit dies if it is not the player???)
 
 
 #[derive(Component)]
@@ -57,17 +60,18 @@ impl BulletBundle{
 /// Move the bullets 
 pub fn bullet_movement(
     time: Res<Time>, 
-    mut sprite_position: Query<(Entity, &mut Bullet, &mut Transform), (With<Bullet>, Without<enemy::Collider>)>,
+    mut bullet_query: Query<(Entity, &mut Bullet, &mut Transform), (With<Bullet>, Without<enemy::Collider>)>,
     collider_query: Query<(Entity, &Transform), (With<enemy::Collider>, Without<Bullet>)>,
     player_query: Query<(Entity, &Transform), (With<player::PlayerControlled>, Without<Bullet>, Without<enemy::Collider>)>,
-    mut health_query: Query<&mut player::Health>,
     mut commands: Commands,
     mut collision_events: EventWriter<CollisionEvent>,
+    mut scoreboard: ResMut<ScoreBoard>
 ) {
-    for (e, mut bullet,  mut b_transform) in &mut sprite_position { // move each bullet 
+    for (bullet_entity, mut bullet,  mut b_transform) in &mut bullet_query { // move each bullet 
         // Move the bullet
-        if bullet.tick > BULLET_DEATH || b_transform.translation.y < B_BOUND || b_transform.translation.y > T_BOUND as f32 {
-            commands.entity(e).despawn();
+        if bullet.tick > BULLET_DEATH || b_transform.translation.y < B_BOUND || b_transform.translation.y > (T_BOUND + 64) as f32 {
+            commands.entity(bullet_entity).despawn();
+            continue;
         }
 
         bullet.update(time.delta_seconds());
@@ -84,8 +88,9 @@ pub fn bullet_movement(
                     
                     if let Some(_) = collision { // collision between enemy and player bullet
                         // want to fire sound here  
-                        collision_events.send(CollisionEvent(p_ent, bullet.damage));
-                        commands.entity(e).despawn(); // despawn the bullet 
+                        collision_events.send(CollisionEvent(p_ent, bullet.damage, true));
+                        scoreboard.set_mul(0); // reset player multiplier when they are hit
+                        commands.entity(bullet_entity).despawn(); // despawn the bullet 
                     }
                 }
             }
@@ -95,8 +100,8 @@ pub fn bullet_movement(
                     let collision = bullet_collision(Aabb2d::new(b_transform.translation.truncate(), b_transform.scale.truncate()/2.), Aabb2d::new(e_transform.translation.truncate(), Vec2::new(16.,16.)));
                     
                     if let Some(_) = collision { // collision between enemy and player bullet
-                        collision_events.send(CollisionEvent(collider_entity, bullet.damage));
-                        commands.entity(e).despawn(); // despawn the bullet 
+                        collision_events.send(CollisionEvent(collider_entity, bullet.damage, false));
+                        commands.entity(bullet_entity).despawn(); // despawn the bullet 
                     }
                 }
             }
@@ -139,6 +144,8 @@ pub fn apply_collision_damage(
     mut health_query: Query<&mut player::Health>,
     mut collision_events: EventReader<CollisionEvent>,
     mut commands: Commands,
+    mut score_events: EventWriter<ScoreEvent>,
+    enemy_query: Query<&enemy::Enemy, With<enemy::Collider>>,
 ){
     if !collision_events.is_empty() {
         // This prevents events staying active on the next frame.
@@ -146,11 +153,40 @@ pub fn apply_collision_damage(
             if let Ok(mut health) = health_query.get_mut(dmg.0) {
                 health.damage(dmg.1);
 
-                if !health.is_alive() {
-                    commands.entity(dmg.0).despawn();
+                if !health.is_alive() { // Entity has died from damage
+                    //check if we should add score
+                    println!("Should add Score? {}", !dmg.2);
+                    println!("Found {} enemies in query ", enemy_query.iter().len());
+                    if !dmg.2 { // not a player dying 
+                        if let Ok(en) = enemy_query.get(dmg.0) {
+                            let (score, mul) = en.get_type().get_score();
+                            score_events.send(ScoreEvent(score, mul));    
+                        }
+                        
+                    }    
+
+                    commands.entity(dmg.0).despawn(); // despawn
                 }
             }
             
+        }
+
+        collision_events.clear(); // empty out when done
+    }
+}
+
+
+pub fn update_score(
+    mut score_events: EventReader<ScoreEvent>,
+    mut scoreboard: ResMut<ScoreBoard>,
+){
+    if !score_events.is_empty() {
+        for score in score_events.read() {
+            
+            println!("Adding Score: {} - {} ", score.0 ,scoreboard.get_score());
+
+            scoreboard.add_score(score.0);
+            scoreboard.add_mul(score.1);
         }
     }
 }

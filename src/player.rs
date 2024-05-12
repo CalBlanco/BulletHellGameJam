@@ -2,13 +2,11 @@ use bevy::prelude::*;
 use std::time::Duration;
 
 
-use crate::{bullet, GameState};
+use crate::{bullet, game, GameState};
 
 use super::{EzTextBundle, B_BOUND};
 
 
-const JUMP_SIZE: f32 = 250.;
-const JUMP_DELAY: f32 = 0.25;
 
 const L_BOUND: u16 = 500;
 const R_BOUND: u16 = 500;
@@ -41,6 +39,10 @@ pub struct PlayerControlled;
 pub struct HealthText;
 #[derive(Component)]
 pub struct ShieldText;
+#[derive(Component)]
+pub struct ScoreText;
+
+
 
 
 
@@ -64,7 +66,6 @@ impl Health {
 
     /// do damage to the entity
     pub fn damage(&mut self, damage: i64){
-        println!("Dealt {} damage!", damage); 
         if self.shield > 0 { // shield is up
             self.shield = self.shield - damage;
         }
@@ -78,7 +79,6 @@ impl Health {
 
     /// check if this entity is a live
     pub fn is_alive(&self) -> bool {
-        println!("is dead: {}", self.is_alive);
         self.is_alive
     }
 
@@ -143,10 +143,9 @@ pub fn sprite_movement(
                 // auto-despawn the entity when playback finishes
                 settings: PlaybackSettings::DESPAWN,
             });
-            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| 5.*(a).cos()  ,  0.,  true, 20), asset_server.load("plasma_blue.png")));
-            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| -5.*(a).cos()  ,  0.,  true, 20), asset_server.load("plasma_blue.png")));
-            commands.spawn( bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new(1, |a| a * a, |_| 0. ,  0., true, 50), asset_server.load("plasma_blue.png")));
-            commands.spawn( bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new(1, |a| a * a * -1., |_| 0. ,  0., true, 50), asset_server.load("plasma_blue.png")));
+            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| 5.*(a).cos()  ,  0.,  true, 60), asset_server.load("plasma_blue.png")));
+            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| -5.*(a).cos()  ,  0.,  true, 60), asset_server.load("plasma_blue.png")));
+            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 30., |_| 0.  ,  0.,  true, 20), asset_server.load("plasma_green.png")));
         }
     }
     else{
@@ -171,8 +170,9 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>){
     );
     commands.insert_resource(ShotTimer(Timer::new(Duration::from_secs_f32(SHOT_DELAY), TimerMode::Repeating)));
  
-    commands.spawn(EzTextBundle::new(String::from("Health: "), 60., 20., 20., asset_server.load("fonts/Lakmus.ttf"), Color::TEAL,HealthText));
-    commands.spawn(EzTextBundle::new(String::from("Shield: "), 60., 80., 20., asset_server.load("fonts/Lakmus.ttf"), Color::TEAL,ShieldText));
+    commands.spawn(EzTextBundle::new(String::from("Health: "), 60., 820., 20., asset_server.load("fonts/Lakmus.ttf"), Color::TEAL,HealthText));
+    commands.spawn(EzTextBundle::new(String::from("Shield: "), 60., 880., 20., asset_server.load("fonts/Lakmus.ttf"), Color::TEAL,ShieldText));
+    commands.spawn(EzTextBundle::new(String::from("Score: "), 80., 760., 20., asset_server.load("fonts/Lakmus.ttf"), Color::GOLD,ScoreText));
 
 }
 
@@ -189,5 +189,14 @@ pub fn update_player_shield(mut query: Query<&mut Text, With<ShieldText>>, mut p
         if let Ok(health) = player.get_single_mut() {
             text.sections[0].value = format!("Shield: {:.2}", health.get_shield());
         }
+    }
+}
+
+pub fn update_player_score(
+    mut query: Query<&mut Text, With<ScoreText>>, 
+    scoreboard: Res<game::ScoreBoard>
+) {
+    for mut text in &mut query {
+        text.sections[0].value = format!("{:09} x {:01}", scoreboard.get_score(), scoreboard.get_mul())
     }
 }
