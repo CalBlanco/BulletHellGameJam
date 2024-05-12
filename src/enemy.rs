@@ -48,7 +48,7 @@ pub struct EnemyBundle {
 
 /// Create a new enemey providing a spawn location, type and asset to render
 impl EnemyBundle {
-    pub fn new(spawn_x: f32, spawn_y: f32, t: EnemyType, asset: Handle<Image>, shield_size: u32, health_size: u32) -> EnemyBundle{
+    pub fn new(spawn_x: f32, spawn_y: f32, t: EnemyType, asset: Handle<Image>, shield_size: i64, health_size: i64) -> EnemyBundle{
         EnemyBundle {
             sprite_bundle: SpriteBundle {
                 texture: asset,
@@ -77,6 +77,7 @@ pub fn enemy_control(
 
 ) {
     for(e, mut transform, mut enemy) in &mut sprite_position{
+        let rng: f32 = rand::thread_rng().gen_range(0.1..=1.125);
         if transform.translation.x <  -(L_BOUND as f32) || transform.translation.x > (R_BOUND as f32) {
             enemy.dir = enemy.dir * -1;
             transform.translation.y -= 96.;
@@ -88,21 +89,36 @@ pub fn enemy_control(
         enemy.last_shot += time.delta_seconds();
 
         if enemy.last_shot > SHOOT_DELAY{
-            enemy.last_shot = 0.;
+            enemy.last_shot = 0. - rng as f32;
             let spawn_x = transform.translation.x;
             let spawn_y = transform.translation.y - 30.;
             match  enemy.t {
                 EnemyType::Melee => {},
                 EnemyType::Linear => { // |args| expr == fn(args) {expr}
                     commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new(-1, |_| 20., |_| 0., 0., false, 20), asset_server.load("plasma_red.png")));
+                    commands.spawn(AudioBundle {
+                        source: asset_server.load("sounds/laser.wav"),
+                        // auto-despawn the entity when playback finishes
+                        settings: PlaybackSettings::DESPAWN,
+                    });
                 },
                 EnemyType::Wavy => {
                     commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new(-1, |_| 4.,  |a| 10.*a.cos(), 0.,  false, 60), asset_server.load("plasma_purple.png")));
+                    commands.spawn(AudioBundle {
+                        source: asset_server.load("sounds/laser.wav"),
+                        // auto-despawn the entity when playback finishes
+                        settings: PlaybackSettings::DESPAWN,
+                    });
                 },
                 EnemyType::Spammer => {
                     commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new( -1, |a| 20.*a,  |_| 5., 0., false, 20), asset_server.load("plasma_red.png")));
                     commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new( -1, |a| 20.*a,  |_| -5., 0., false, 20), asset_server.load("plasma_red.png")));
                     commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new( -1, |_| 4.,  |a| 10.*a.cos(), 0., false, 20), asset_server.load("plasma_red.png")));
+                    commands.spawn(AudioBundle {
+                        source: asset_server.load("sounds/laser.wav"),
+                        // auto-despawn the entity when playback finishes
+                        settings: PlaybackSettings::DESPAWN,
+                    });
                 
                 },
                 EnemyType::Spawner => {
