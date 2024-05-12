@@ -1,7 +1,7 @@
 use bevy::{diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}, prelude::*, window::{PresentMode, WindowTheme}};
 
-
-
+pub const T_BOUND: u16 = 400;
+pub const B_BOUND: f32 = -500.;
 
 mod bullet;
 mod enemy;
@@ -49,3 +49,32 @@ fn main() {
         .run();
 }
 
+#[derive(Bundle)]
+pub struct EzTextBundle<T: Component> {
+    text: TextBundle,
+    tag: T,
+}
+
+impl<T: Component> EzTextBundle<T> {
+    pub fn new(text: String, size: f32, top: f32, left: f32, font: Handle<Font>, color: Color, tag: T ) -> EzTextBundle<T> {
+        EzTextBundle {
+            text: TextBundle::from_section(
+                text,
+                TextStyle {
+                    font: font,
+                    font_size: size,
+                    color: color,
+                    ..default()
+                },
+            )
+            .with_text_justify(JustifyText::Center)
+            .with_style(Style {
+                position_type: PositionType::Absolute,
+                top: Val::Px(top),
+                right: Val::Px(left),
+                ..default()
+            }),
+            tag: tag
+        }
+    }
+}

@@ -4,13 +4,14 @@ use std::time::Duration;
 
 use crate::{bullet, GameState};
 
+use super::{EzTextBundle, B_BOUND};
 
 
 const JUMP_SIZE: f32 = 400.;
 const L_BOUND: u16 = 500;
 const R_BOUND: u16 = 500;
 const SPAWN_X: f32 = 0.;
-const SPAWN_Y: f32 = -200.;
+const SPAWN_Y: f32 = B_BOUND + 100.;
 const MOVE_SPEED: f32 = 180.;
 const SHOT_DELAY: f32 = 0.05;
 
@@ -30,6 +31,8 @@ pub struct PlayerControlled;
 
 
 
+#[derive(Component)]
+pub struct HealthText;
 
 
 
@@ -60,7 +63,7 @@ impl Health {
         self.is_alive = if self.health > 0 {true} else {false};
     }
 
-    // check if this entity is a live
+    /// check if this entity is a live
     pub fn is_alive(&self) -> bool {
         println!("is dead: {}", self.is_alive);
         self.is_alive
@@ -147,4 +150,14 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>){
     );
     commands.insert_resource(ShotTimer(Timer::new(Duration::from_secs_f32(SHOT_DELAY), TimerMode::Repeating)));
 
+    commands.spawn(EzTextBundle::new(String::from("Health"), 60., 20., 20., asset_server.load("fonts/Lakmus.ttf"), Color::rgb(0.9,0.9,0.3),HealthText));
+
+}
+
+pub fn update_player_health(mut query: Query<&mut Text, With<HealthText>>, mut player: Query<&mut Health, With<PlayerControlled>>){
+    for mut text in &mut query {
+        if let Ok(health) = player.get_single_mut() {
+            text.sections[0].value = format!("{:.2}", health.get_health());
+        }
+    }
 }

@@ -1,6 +1,8 @@
 use bevy::{math::bounding::{Aabb2d, IntersectsVolume}, prelude::*};
 
 use crate::{player, enemy};
+use super::{T_BOUND, B_BOUND};
+
 const BULLET_DEATH: f32 = 5.;
 
 #[derive(Event, Default)]
@@ -63,7 +65,7 @@ pub fn bullet_movement(
 ) {
     for (e, mut bullet,  mut b_transform) in &mut sprite_position { // move each bullet 
         // Move the bullet
-        if bullet.tick > BULLET_DEATH  {
+        if bullet.tick > BULLET_DEATH || b_transform.translation.y < B_BOUND || b_transform.translation.y > T_BOUND as f32 {
             commands.entity(e).despawn();
         }
 

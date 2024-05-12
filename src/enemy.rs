@@ -3,10 +3,11 @@ use rand::Rng;
 
 use crate::{bullet, player};
 
+use super::T_BOUND;
 
 const L_BOUND: u16 = 500;
 const R_BOUND: u16 = 500;
-const T_BOUND: u16 = 300;
+
 
 const SHOOT_DELAY: f32 = 1.5;
 
@@ -77,7 +78,7 @@ pub fn enemy_control(
 
 ) {
     for(_, mut transform, mut enemy) in &mut sprite_position{
-        let rng: f32 = rand::thread_rng().gen_range(0.1..=1.125);
+        let random_shot_delay: f32 = rand::thread_rng().gen_range(0.1..=1.525);
         if transform.translation.x <  -(L_BOUND as f32) || transform.translation.x > (R_BOUND as f32) {
             enemy.dir = enemy.dir * -1;
             transform.translation.y -= 96.;
@@ -89,7 +90,7 @@ pub fn enemy_control(
         enemy.last_shot += time.delta_seconds();
 
         if enemy.last_shot > SHOOT_DELAY && transform.translation.y < T_BOUND as f32{
-            enemy.last_shot = 0. - rng as f32;
+            enemy.last_shot = 0. - random_shot_delay as f32;
             let spawn_x = transform.translation.x;
             let spawn_y = transform.translation.y - 30.;
             match  enemy.t {
@@ -139,13 +140,13 @@ fn spawn_wave_box(wave_rows: u32, wave_cols: u32, asset_server: &mut Res<AssetSe
     for x in 1..wave_rows {
         for y in 1..wave_cols {
             
-            let spawn_x =  (64. * x as f32 + 32.) - L_BOUND as f32;
-            let spawn_y = T_BOUND as f32 + (64 * y) as f32 - 300.;
+            let spawn_x =  (64. * x as f32 + 32.) - L_BOUND as f32 + 96 as f32;
+            let spawn_y = T_BOUND as f32 + (64 * y) as f32 + 64.;
 
             let rng = rand::thread_rng().gen_range(0..=100);
             match rng {
                 0..=25 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("enemies/melee.png"), 0, 200));},
-                26..=50 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Linear, asset_server.load("enemies/basic.png"), 100, 50));},
+                26..=50 => {commands.spawn(EnemyBundle  ::new(spawn_x, spawn_y, EnemyType::Linear, asset_server.load("enemies/basic.png"), 100, 50));},
                 51..=75 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Wavy, asset_server.load("enemies/wavy.png"), 200, 100));},
                 76..=100 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spammer, asset_server.load("enemies/spammer.png"), 200, 100));},
                 _ => ()
@@ -162,5 +163,5 @@ pub fn init_wave(
     mut commands: Commands,
     mut asset_server: Res<AssetServer>
 ){
-        spawn_wave_box(5, 3, &mut asset_server, &mut commands)
+        spawn_wave_box(10, 4, &mut asset_server, &mut commands)
 }
