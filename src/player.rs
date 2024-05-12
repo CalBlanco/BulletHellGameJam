@@ -14,8 +14,8 @@ const SPAWN_Y: f32 = -200.;
 const MOVE_SPEED: f32 = 180.;
 const SHOT_DELAY: f32 = 0.05;
 
-const SHIELD_SIZE: u32 = 400;
-const HEALTH_SIZE: u32 = 200;
+const SHIELD_SIZE: i64 = 400;
+const HEALTH_SIZE: i64 = 200;
 
 
 #[derive(Resource)]
@@ -59,14 +59,14 @@ impl PlayerBundle {
 
 #[derive(Component)]
 pub struct Health {
-    shield: u32,
-    health: u32,
+    shield: i64,
+    health: i64,
     is_alive: bool,
 }
 
 impl Health {
     /// Create a new health component specifying shield size, and health
-    pub fn new(shield_size: u32, health_size: u32) -> Health {
+    pub fn new(shield_size: i64, health_size: i64) -> Health {
         Health {
             shield: shield_size,
             health: health_size,
@@ -76,18 +76,21 @@ impl Health {
     }
 
     /// do damage to the entity
-    pub fn damage(&mut self, damage: u32){
+    pub fn damage(&mut self, damage: i64){
         println!("Dealt {} damage!", damage);
-        self.shield = if self.shield > 0 {self.shield - damage} else {0};
-        self.health = if self.shield <=0 {self.health - damage} else {0};
+        self.shield = if self.shield - damage > 0 {self.shield - damage} else {0};
+        self.health = if self.shield <= 0 && self.health - damage > 0 {self.health - damage} else {0};
 
         self.is_alive = if self.health > 0 {true} else {false};
     }
 
     // check if this entity is a live
     pub fn isAlive(&self) -> bool {
+        println!("is dead: {}", self.is_alive);
         self.is_alive
     }
+
+    pub fn get_health(&self) -> i64 {self.health}
 }
 
 pub fn sprite_movement(

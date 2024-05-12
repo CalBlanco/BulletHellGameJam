@@ -15,13 +15,13 @@ pub struct Bullet
     fy: fn(f32) -> f32,
     tick: f32,
     ply: bool,
-    damage: u32
+    damage: i64
 } // 
 
 impl Bullet{
     /// Update the life time of the bullet 
     /// 
-    pub fn new(dir: i8, fy: fn(f32) -> f32, fx: fn(f32) -> f32, tick: f32, ply: bool, damage: u32) -> Bullet {
+    pub fn new(dir: i8, fy: fn(f32) -> f32, fx: fn(f32) -> f32, tick: f32, ply: bool, damage: i64) -> Bullet {
         Bullet {dir: dir, fx: fx, fy: fy, tick: tick, ply: ply, damage: damage}
     }
     pub fn update(&mut self, time:f32) {
@@ -87,7 +87,7 @@ pub fn bullet_movement(
                         if let Ok(mut player_health) = health_query.get_mut(p_ent) {
                             player_health.damage(bullet.damage);
 
-                            if !player_health.isAlive() {
+                            if player_health.get_health() < 0 {
                                 commands.entity(p_ent).despawn();
                             }
                         }

@@ -67,8 +67,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             parent
                 .spawn(ButtonBundle {
                     style: Style {
-                        width: Val::Px(150.0),
-                        height: Val::Px(65.0),
+                        width: Val::Px(350.0),
+                        height: Val::Px(165.0),
                         border: UiRect::all(Val::Px(5.0)),
                         // horizontally center child text
                         justify_content: JustifyContent::Center,
@@ -85,7 +85,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         "Button",
                         TextStyle {
                             font: asset_server.load("fonts/Swamp-Witch.ttf"),
-                            font_size: 40.0,
+                            font_size: 60.0,
                             color: Color::rgb(0.9, 0.9, 0.9),
                         },
                     ));

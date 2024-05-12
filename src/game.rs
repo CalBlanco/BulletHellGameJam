@@ -23,11 +23,13 @@ fn setup(mut commands: Commands) {
     commands.spawn(( //Camera with bloom settings enabled
         Camera2dBundle {
             camera: Camera {
+                hdr: true,
                 ..default()
             },
-            
+            tonemapping: Tonemapping::TonyMcMapface,
             ..default()
         },
+        BloomSettings::default(),
     ));
 
 
