@@ -64,10 +64,15 @@ impl Health {
 
     /// do damage to the entity
     pub fn damage(&mut self, damage: i64){
-        println!("Dealt {} damage!", damage);
-        self.shield = if self.shield - damage > 0 {self.shield - damage} else {0};
-        self.health = if self.shield <= 0 {self.health - damage} else {0};
- 
+        println!("Dealt {} damage!", damage); 
+        if self.shield > 0 { // shield is up
+            self.shield = self.shield - damage;
+        }
+        else { // shields not up
+            self.health = self.health - damage;
+        }
+        
+
         self.is_alive = self.health > 0 
     }
 
@@ -78,6 +83,7 @@ impl Health {
     }
 
     pub fn get_health(&self) -> i64 {self.health}
+    pub fn get_shield(&self) -> i64 {self.shield}
 }
 
 pub fn sprite_movement(
@@ -137,9 +143,10 @@ pub fn sprite_movement(
                 // auto-despawn the entity when playback finishes
                 settings: PlaybackSettings::DESPAWN,
             });
-            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| 10.*(a).cos()  ,  0.,  true, 20), asset_server.load("plasma_blue.png")));
-            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| -10.*(a).cos()  ,  0.,  true, 20), asset_server.load("plasma_blue.png")));
-            commands.spawn( bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new(1, |_| 50., |_| 0. ,  0., true, 50), asset_server.load("plasma_blue.png")));
+            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| 5.*(a).cos()  ,  0.,  true, 20), asset_server.load("plasma_blue.png")));
+            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| -5.*(a).cos()  ,  0.,  true, 20), asset_server.load("plasma_blue.png")));
+            commands.spawn( bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new(1, |a| a * a, |_| 0. ,  0., true, 50), asset_server.load("plasma_blue.png")));
+            commands.spawn( bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new(1, |a| a * a * -1., |_| 0. ,  0., true, 50), asset_server.load("plasma_blue.png")));
         }
     }
     else{
@@ -164,8 +171,8 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>){
     );
     commands.insert_resource(ShotTimer(Timer::new(Duration::from_secs_f32(SHOT_DELAY), TimerMode::Repeating)));
  
-    commands.spawn(EzTextBundle::new(String::from("Health: "), 60., 20., 20., asset_server.load("fonts/Lakmus.ttf"), Color::rgb(0.9,0.9,0.3),HealthText));
-    commands.spawn(EzTextBundle::new(String::from("Shield: "), 60., 80., 20., asset_server.load("fonts/Lakmus.ttf"), Color::rgb(0.9,0.9,0.3),ShieldText));
+    commands.spawn(EzTextBundle::new(String::from("Health: "), 60., 20., 20., asset_server.load("fonts/Lakmus.ttf"), Color::TEAL,HealthText));
+    commands.spawn(EzTextBundle::new(String::from("Shield: "), 60., 80., 20., asset_server.load("fonts/Lakmus.ttf"), Color::TEAL,ShieldText));
 
 }
 
@@ -180,7 +187,7 @@ pub fn update_player_health(mut query: Query<&mut Text, With<HealthText>>, mut p
 pub fn update_player_shield(mut query: Query<&mut Text, With<ShieldText>>, mut player: Query<&mut Health, With<PlayerControlled>>){
     for mut text in &mut query {
         if let Ok(health) = player.get_single_mut() {
-            text.sections[0].value = format!("Shield: {:.2}", health.get_health());
+            text.sections[0].value = format!("Shield: {:.2}", health.get_shield());
         }
     }
 }

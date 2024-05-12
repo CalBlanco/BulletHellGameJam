@@ -11,7 +11,7 @@ impl Plugin for BulletHellElite {
         app
             .add_event::<bullet::CollisionEvent>()
             .add_systems(OnEnter(GameState::Game),(setup, player::spawn_player, enemy::init_wave).before(player::sprite_movement))
-            .add_systems(FixedUpdate, (player::sprite_movement, bullet::bullet_movement, bullet::play_collision_sound, enemy::enemy_control, player::update_player_health, player::update_player_shield).run_if(in_state(GameState::Game)))
+            .add_systems(FixedUpdate, (player::sprite_movement, bullet::bullet_movement, bullet::play_collision_sound, bullet::apply_collision_damage, enemy::enemy_control, player::update_player_health, player::update_player_shield).run_if(in_state(GameState::Game)))
             .add_systems(OnExit(GameState::Game), cleanup);
     }
 }
