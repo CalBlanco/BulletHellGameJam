@@ -8,6 +8,7 @@ mod enemy;
 mod player;
 mod game;
 mod menu;
+mod music;
 
 #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
 enum GameState {

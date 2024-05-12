@@ -9,7 +9,7 @@ const L_BOUND: u16 = 500;
 const R_BOUND: u16 = 500;
 
 
-const SHOOT_DELAY: f32 = 1.5;
+const SHOOT_DELAY: f32 = 0.5;
 
 const MOVE_SPEED: f32 = 125.;
 
@@ -78,7 +78,7 @@ pub fn enemy_control(
 
 ) {
     for(_, mut transform, mut enemy) in &mut sprite_position{
-        let random_shot_delay: f32 = rand::thread_rng().gen_range(0.1..=1.525);
+        let random_shot_delay: f32 = rand::thread_rng().gen_range(0.1..=0.525);
         if transform.translation.x <  -(L_BOUND as f32) || transform.translation.x > (R_BOUND as f32) {
             enemy.dir = enemy.dir * -1;
             transform.translation.y -= 96.;
@@ -123,10 +123,15 @@ pub fn enemy_control(
                 
                 },
                 EnemyType::Spawner => {
-                    let rng_x = rand::thread_rng().gen_range(0..=5);
-                    let rng_y = rand::thread_rng().gen_range(0..=5);
+                    let rng_x = rand::thread_rng().gen_range(1..=5);
+                    let rng_y = rand::thread_rng().gen_range(1..=5);
                     spawn_wave_box(rng_x, rng_y, &mut asset_server, &mut commands);
                     enemy.last_shot -= 200.; // Set the spawn timer to have a larger delay than the shoot timer
+                    commands.spawn(AudioBundle {
+                        source: asset_server.load("sounds/shieldhit.wav"),
+                        // auto-despawn the entity when playback finishes
+                        settings: PlaybackSettings::DESPAWN,
+                    });
                 }
     
             }
@@ -138,9 +143,9 @@ pub fn enemy_control(
 
 fn spawn_wave_box(wave_rows: u32, wave_cols: u32, asset_server: &mut Res<AssetServer>, commands: &mut Commands) {
     for x in 1..wave_rows {
-        for y in 1..wave_cols {
+        for y in 0..wave_cols {
             
-            let spawn_x =  (64. * x as f32 + 32.) - L_BOUND as f32 + 96 as f32;
+            let spawn_x =  (64. * x as f32 + 32.) - L_BOUND as f32 as f32;
             let spawn_y = T_BOUND as f32 + (64 * y) as f32 + 64.;
 
             let rng = rand::thread_rng().gen_range(0..=100);

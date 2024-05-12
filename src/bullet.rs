@@ -88,7 +88,7 @@ pub fn bullet_movement(
                         if let Ok(mut player_health) = health_query.get_mut(p_ent) {
                             player_health.damage(bullet.damage);
 
-                            if player_health.get_health() < 0 {
+                            if player_health.get_health() <= 0 {
                                 commands.entity(p_ent).despawn();
                             }
                         }

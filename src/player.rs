@@ -13,7 +13,7 @@ const R_BOUND: u16 = 500;
 const SPAWN_X: f32 = 0.;
 const SPAWN_Y: f32 = B_BOUND + 100.;
 const MOVE_SPEED: f32 = 180.;
-const SHOT_DELAY: f32 = 0.05;
+const SHOT_DELAY: f32 = 0.25;
 
 const SHIELD_SIZE: i64 = 400;
 const HEALTH_SIZE: i64 = 200;
@@ -33,6 +33,8 @@ pub struct PlayerControlled;
 
 #[derive(Component)]
 pub struct HealthText;
+#[derive(Component)]
+pub struct ShieldText;
 
 
 
@@ -58,9 +60,9 @@ impl Health {
     pub fn damage(&mut self, damage: i64){
         println!("Dealt {} damage!", damage);
         self.shield = if self.shield - damage > 0 {self.shield - damage} else {0};
-        self.health = if self.shield <= 0 && self.health - damage > 0 {self.health - damage} else {0};
-
-        self.is_alive = if self.health > 0 {true} else {false};
+        self.health = if self.shield <= 0 {self.health - damage} else {0};
+ 
+        self.is_alive = self.health > 0 
     }
 
     /// check if this entity is a live
@@ -129,7 +131,7 @@ pub fn sprite_movement(
         }
     }
     else{
-        game_state.set(GameState::Menu);
+        //game_state.set(GameState::Menu);
     }
 }
 
@@ -150,14 +152,23 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>){
     );
     commands.insert_resource(ShotTimer(Timer::new(Duration::from_secs_f32(SHOT_DELAY), TimerMode::Repeating)));
 
-    commands.spawn(EzTextBundle::new(String::from("Health"), 60., 20., 20., asset_server.load("fonts/Lakmus.ttf"), Color::rgb(0.9,0.9,0.3),HealthText));
+    commands.spawn(EzTextBundle::new(String::from("Health: "), 60., 20., 20., asset_server.load("fonts/Lakmus.ttf"), Color::rgb(0.9,0.9,0.3),HealthText));
+    commands.spawn(EzTextBundle::new(String::from("Shield: "), 60., 80., 20., asset_server.load("fonts/Lakmus.ttf"), Color::rgb(0.9,0.9,0.3),ShieldText));
 
 }
 
 pub fn update_player_health(mut query: Query<&mut Text, With<HealthText>>, mut player: Query<&mut Health, With<PlayerControlled>>){
     for mut text in &mut query {
         if let Ok(health) = player.get_single_mut() {
-            text.sections[0].value = format!("{:.2}", health.get_health());
+            text.sections[0].value = format!("Health: {:.2}", health.get_health());
+        }
+    }
+}
+
+pub fn update_player_shield(mut query: Query<&mut Text, With<ShieldText>>, mut player: Query<&mut Health, With<PlayerControlled>>){
+    for mut text in &mut query {
+        if let Ok(health) = player.get_single_mut() {
+            text.sections[0].value = format!("Shield: {:.2}", health.get_health());
         }
     }
 }
