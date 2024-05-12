@@ -5,8 +5,9 @@ use super::{T_BOUND, B_BOUND};
 
 const BULLET_DEATH: f32 = 5.;
 
-#[derive(Event, Default)]
-pub struct CollisionEvent;
+#[derive(Event)]
+pub struct CollisionEvent(Entity, i64);
+
 
 #[derive(Component)]
 /// Bullet Struct ;)
@@ -83,16 +84,7 @@ pub fn bullet_movement(
                     
                     if let Some(_) = collision { // collision between enemy and player bullet
                         // want to fire sound here  
-                        collision_events.send_default();
-
-                        if let Ok(mut player_health) = health_query.get_mut(p_ent) {
-                            player_health.damage(bullet.damage);
-
-                            if player_health.get_health() <= 0 {
-                                commands.entity(p_ent).despawn();
-                            }
-                        }
-
+                        collision_events.send(CollisionEvent(p_ent, bullet.damage));
                         commands.entity(e).despawn(); // despawn the bullet 
                     }
                 }
@@ -102,28 +94,14 @@ pub fn bullet_movement(
                 for(collider_entity, e_transform) in &collider_query {
                     let collision = bullet_collision(Aabb2d::new(b_transform.translation.truncate(), b_transform.scale.truncate()/2.), Aabb2d::new(e_transform.translation.truncate(), Vec2::new(16.,16.)));
                     
-                    if let Some(col) = collision { // collision between enemy and player bullet
-                        // play impact sound here ? or just play it in health might be
-                        collision_events.send_default();
-                        if col { 
-                            if let Ok(mut enemy_health) = health_query.get_mut(collider_entity) {
-                                enemy_health.damage(bullet.damage);
-    
-                                if !enemy_health.is_alive() {
-                                    commands.entity(collider_entity).despawn();
-                                }
-                            }
-
-                            commands.entity(e).despawn(); // despawn the bullet 
-                        } 
-                        
+                    if let Some(_) = collision { // collision between enemy and player bullet
+                        collision_events.send(CollisionEvent(collider_entity, bullet.damage));
+                        commands.entity(e).despawn(); // despawn the bullet 
                     }
                 }
             }
         }
         
-
-       
     }
 }
 
@@ -153,5 +131,26 @@ pub fn play_collision_sound(
             // auto-despawn the entity when playback finishes
             settings: PlaybackSettings::DESPAWN,
         });
+    }
+}
+
+/// Event for processing damage
+pub fn apply_collision_damage(
+    mut health_query: Query<&mut player::Health>,
+    mut collision_events: EventReader<CollisionEvent>,
+    mut commands: Commands,
+){
+    if !collision_events.is_empty() {
+        // This prevents events staying active on the next frame.
+        for dmg in collision_events.read() {
+            if let Ok(mut health) = health_query.get_mut(dmg.0) {
+                health.damage(dmg.1);
+
+                if !health.is_alive() {
+                    commands.entity(dmg.0).despawn();
+                }
+            }
+            
+        }
     }
 }

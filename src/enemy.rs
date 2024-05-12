@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::prelude::*;
 use rand::Rng;
 
@@ -53,7 +55,11 @@ impl EnemyBundle {
         EnemyBundle {
             sprite_bundle: SpriteBundle {
                 texture: asset,
-                transform: Transform::from_xyz(spawn_x, spawn_y, 0.),
+                transform: Transform {
+                    translation: Vec3::new(spawn_x, spawn_y, 0.),
+                    rotation: Quat::from_rotation_z(PI),
+                    scale: Vec3::new(1.,1.,1.)
+                },
                 ..default()
             },
             enemy: Enemy {
@@ -142,10 +148,10 @@ pub fn enemy_control(
 
 
 fn spawn_wave_box(wave_rows: u32, wave_cols: u32, asset_server: &mut Res<AssetServer>, commands: &mut Commands) {
-    for x in 1..wave_rows {
-        for y in 0..wave_cols {
+    for x in 1..wave_rows { // spawns offset by 1
+        for y in 0..wave_cols {  // 
             
-            let spawn_x =  (64. * x as f32 + 32.) - L_BOUND as f32 as f32;
+            let spawn_x =  (64. * x as f32 + 32.) - L_BOUND as f32 as f32; 
             let spawn_y = T_BOUND as f32 + (64 * y) as f32 + 64.;
 
             let rng = rand::thread_rng().gen_range(0..=100);
@@ -159,7 +165,7 @@ fn spawn_wave_box(wave_rows: u32, wave_cols: u32, asset_server: &mut Res<AssetSe
         }
     }
 
-    commands.spawn(EnemyBundle::new(0.-L_BOUND as f32, T_BOUND as f32, EnemyType::Spawner, asset_server.load("enemies/spawner.png"), 400, 100)); // always spawn a spawner in the wave
+    commands.spawn(EnemyBundle::new(0.-L_BOUND as f32, T_BOUND as f32 + 64., EnemyType::Spawner, asset_server.load("enemies/spawner.png"), 400, 100)); // always spawn a spawner in the wave
 }
 
 
