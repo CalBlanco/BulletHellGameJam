@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::prelude::*;
 use rand::Rng;
 
@@ -53,7 +55,11 @@ impl EnemyBundle {
         EnemyBundle {
             sprite_bundle: SpriteBundle {
                 texture: asset,
-                transform: Transform::from_xyz(spawn_x, spawn_y, 0.),
+                transform: Transform {
+                    translation: Vec3::new(spawn_x, spawn_y, 0.),
+                    rotation: Quat::from_rotation_z(PI),
+                    scale: Vec3::new(1.,1.,1.)
+                },
                 ..default()
             },
             enemy: Enemy {
