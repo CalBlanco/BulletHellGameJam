@@ -59,7 +59,6 @@ pub fn bullet_movement(
     player_query: Query<(Entity, &Transform), (With<player::PlayerControlled>, Without<Bullet>, Without<enemy::Collider>)>,
     mut health_query: Query<&mut player::Health>,
     mut commands: Commands,
-    mut gizmos: Gizmos,
     mut collision_events: EventWriter<CollisionEvent>,
 ) {
     for (e, mut bullet,  mut b_transform) in &mut sprite_position { // move each bullet 
@@ -80,7 +79,7 @@ pub fn bullet_movement(
                 if let Ok((p_ent, p_transform)) = player_query.get_single() {
                     let collision = bullet_collision(Aabb2d::new(b_transform.translation.truncate(), Vec2::new(8.,8.)), Aabb2d::new(p_transform.translation.truncate(), Vec2::new(16.,16.)));
                     
-                    if let Some(col) = collision { // collision between enemy and player bullet
+                    if let Some(_) = collision { // collision between enemy and player bullet
                         // want to fire sound here  
                         collision_events.send_default();
 
@@ -108,7 +107,7 @@ pub fn bullet_movement(
                             if let Ok(mut enemy_health) = health_query.get_mut(collider_entity) {
                                 enemy_health.damage(bullet.damage);
     
-                                if !enemy_health.isAlive() {
+                                if !enemy_health.is_alive() {
                                     commands.entity(collider_entity).despawn();
                                 }
                             }
@@ -141,7 +140,7 @@ fn bullet_collision(bullet: Aabb2d, enemy: Aabb2d) -> Option<bool> {
 pub fn play_collision_sound(
     mut commands: Commands,
     mut collision_events: EventReader<CollisionEvent>,
-    mut asset_server: Res<AssetServer>
+    asset_server: Res<AssetServer>
 ) {
     // Play a sound once per frame if a collision occurred.
     if !collision_events.is_empty() {

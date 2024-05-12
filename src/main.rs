@@ -1,4 +1,4 @@
-use bevy::{core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping}, diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}, ecs::schedule::ScheduleLabel, math::bounding::{Aabb2d, BoundingCircle, IntersectsVolume}, prelude::*, window::{PresentMode, WindowTheme}};
+use bevy::{diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}, prelude::*, window::{PresentMode, WindowTheme}};
 
 
 

@@ -37,14 +37,14 @@ fn setup(mut commands: Commands) {
 
 fn cleanup(
     ents: Query<(Entity, &Transform)>,
-    cams: Query<(Entity), With<Camera>>,
+    cams: Query<Entity, With<Camera>>,
     mut commands: Commands
 ){
     for (ent, _) in &ents {
         commands.entity(ent).despawn();
     }
 
-    for (ent) in &cams{
+    for ent in &cams{
         commands.entity(ent).despawn();
     }
 }

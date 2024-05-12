@@ -7,9 +7,9 @@ use crate::{bullet, player};
 const L_BOUND: u16 = 500;
 const R_BOUND: u16 = 500;
 const T_BOUND: u16 = 300;
-const B_BOUND: i16 = -200;
+
 const SHOOT_DELAY: f32 = 1.5;
-const SPAWN_DELAY: f32 = 15.;
+
 const MOVE_SPEED: f32 = 125.;
 
 #[derive(Component)]
@@ -76,7 +76,7 @@ pub fn enemy_control(
     mut asset_server: Res<AssetServer>
 
 ) {
-    for(e, mut transform, mut enemy) in &mut sprite_position{
+    for(_, mut transform, mut enemy) in &mut sprite_position{
         let rng: f32 = rand::thread_rng().gen_range(0.1..=1.125);
         if transform.translation.x <  -(L_BOUND as f32) || transform.translation.x > (R_BOUND as f32) {
             enemy.dir = enemy.dir * -1;
@@ -88,7 +88,7 @@ pub fn enemy_control(
         
         enemy.last_shot += time.delta_seconds();
 
-        if enemy.last_shot > SHOOT_DELAY{
+        if enemy.last_shot > SHOOT_DELAY && transform.translation.y < T_BOUND as f32{
             enemy.last_shot = 0. - rng as f32;
             let spawn_x = transform.translation.x;
             let spawn_y = transform.translation.y - 30.;
@@ -125,7 +125,7 @@ pub fn enemy_control(
                     let rng_x = rand::thread_rng().gen_range(0..=5);
                     let rng_y = rand::thread_rng().gen_range(0..=5);
                     spawn_wave_box(rng_x, rng_y, &mut asset_server, &mut commands);
-                    enemy.last_shot -= SPAWN_DELAY; // Set the spawn timer to have a larger delay than the shoot timer
+                    enemy.last_shot -= 200.; // Set the spawn timer to have a larger delay than the shoot timer
                 }
     
             }
@@ -136,11 +136,11 @@ pub fn enemy_control(
 
 
 fn spawn_wave_box(wave_rows: u32, wave_cols: u32, asset_server: &mut Res<AssetServer>, commands: &mut Commands) {
-    for x in 0..wave_rows {
-        for y in 0..wave_cols {
+    for x in 1..wave_rows {
+        for y in 1..wave_cols {
             
             let spawn_x =  (64. * x as f32 + 32.) - L_BOUND as f32;
-            let spawn_y = T_BOUND as f32 + (64 * y) as f32;
+            let spawn_y = T_BOUND as f32 + (64 * y) as f32 - 300.;
 
             let rng = rand::thread_rng().gen_range(0..=100);
             match rng {
@@ -152,6 +152,8 @@ fn spawn_wave_box(wave_rows: u32, wave_cols: u32, asset_server: &mut Res<AssetSe
             }
         }
     }
+
+    commands.spawn(EnemyBundle::new(0.-L_BOUND as f32, T_BOUND as f32, EnemyType::Spawner, asset_server.load("enemies/spawner.png"), 400, 100)); // always spawn a spawner in the wave
 }
 
 

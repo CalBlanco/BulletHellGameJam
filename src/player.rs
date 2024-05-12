@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use std::time::Duration;
 
 
-use crate::{bullet, game, GameState};
+use crate::{bullet, GameState};
 
 
 
@@ -29,32 +29,8 @@ pub struct ShotTimer(Timer);
 pub struct PlayerControlled;
 
 
-// NOT IN USE EVEN THOUGH ITS BEING FUCKING ACCESSED BY THE QUERY TO MOVE IT OH WAIT IT DOESNT EXIST EVEN IF I SPAWN IT IN 80 MILLION TIMES IT JUST REFUSES TO FUCKING ADD THIS TO THE GAME 
-// DONT FUCKING NO WHY THIS IS SWAG THO WISH THIS WAS HAPPENING EVERYWHERE 
-#[derive(Component)]
-pub struct PlayerBundle {
-    sprite_bundle: SpriteBundle,
-    control: PlayerControlled
-}
 
 
-
-
-
-impl PlayerBundle {
-    pub fn new(spawn_x: f32, spawn_y: f32, asset: Handle<Image>) -> PlayerBundle {
-        PlayerBundle {
-            sprite_bundle: SpriteBundle {
-                texture: asset,
-                transform: Transform::from_xyz(spawn_x, spawn_y, 1.),
-                ..default()
-            },
-            control: PlayerControlled
-        }
-    }
-
-   
-}
 
 
 #[derive(Component)]
@@ -85,7 +61,7 @@ impl Health {
     }
 
     // check if this entity is a live
-    pub fn isAlive(&self) -> bool {
+    pub fn is_alive(&self) -> bool {
         println!("is dead: {}", self.is_alive);
         self.is_alive
     }
@@ -99,12 +75,11 @@ pub fn sprite_movement(
     keycode: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut gizmos: Gizmos,
     mut shot_timer: ResMut<ShotTimer>,
     mut game_state: ResMut<NextState<GameState>>,
 ) {
     
-    if let Ok((p_ent, mut transform )) = sprite_position.get_single_mut() {
+    if let Ok((_, mut transform )) = sprite_position.get_single_mut() {
         shot_timer.0.tick(time.delta());
 
         //gizmos.rect_2d(transform.translation.truncate(), 0., Vec2::new(32., 32.), Color::rgb(1.,1.,0.));
