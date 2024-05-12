@@ -7,13 +7,18 @@ use crate::{bullet, GameState};
 use super::{EzTextBundle, B_BOUND};
 
 
-const JUMP_SIZE: f32 = 400.;
+const JUMP_SIZE: f32 = 250.;
+const JUMP_DELAY: f32 = 0.25;
+
 const L_BOUND: u16 = 500;
 const R_BOUND: u16 = 500;
+const PLAYER_T_BOUND: f32 = -200.;
 const SPAWN_X: f32 = 0.;
 const SPAWN_Y: f32 = B_BOUND + 100.;
+
 const MOVE_SPEED: f32 = 180.;
-const SHOT_DELAY: f32 = 0.25;
+const SHOT_DELAY: f32 = 0.05;
+
 
 const SHIELD_SIZE: i64 = 400;
 const HEALTH_SIZE: i64 = 200;
@@ -21,6 +26,7 @@ const HEALTH_SIZE: i64 = 200;
 
 #[derive(Resource)]
 pub struct ShotTimer(Timer);
+
 
 
 // TODO: implement a shield reset timer
@@ -89,12 +95,20 @@ pub fn sprite_movement(
 
         //gizmos.rect_2d(transform.translation.truncate(), 0., Vec2::new(32., 32.), Color::rgb(1.,1.,0.));
 
-        
+        // Bound X
         if transform.translation.x > R_BOUND as f32 {
-            transform.translation.x -= 50.;
+            transform.translation.x  = (R_BOUND - 1) as f32;
         } else if transform.translation.x < -(L_BOUND as f32) {
-            transform.translation.x += 50.;
+            transform.translation.x = 1. - L_BOUND as f32 ;
         }
+        // Bound Y 
+        if transform.translation.y > PLAYER_T_BOUND as f32 {
+            transform.translation.y  = (PLAYER_T_BOUND - 1.) as f32;
+        } else if transform.translation.y < SPAWN_Y {
+            transform.translation.y = SPAWN_Y + 1.; 
+        }
+
+
     
         let speed_mult = if keycode.pressed(KeyCode::ShiftLeft){ 3. } else { 1.}; // Speed boost
         let move_dist = MOVE_SPEED * time.delta_seconds() * speed_mult;
@@ -107,13 +121,11 @@ pub fn sprite_movement(
             transform.translation.x +=  move_dist;//if transform.translation.x + move_dist > R_BOUND as f32 {0.} else {move_dist}
         }
     
-        if keycode.just_pressed(KeyCode::KeyW) {
-            let jump_x = if transform.translation.x - JUMP_SIZE < 0. - L_BOUND as f32 { 0. - L_BOUND as f32 } else {transform.translation.x - JUMP_SIZE};
-            transform.translation.x = jump_x;
+        if keycode.pressed(KeyCode::KeyW){ 
+            transform.translation.y += move_dist;
         }
-        if keycode.just_pressed(KeyCode::KeyS) {
-            let jump_x = if transform.translation.x + JUMP_SIZE > L_BOUND as f32 { L_BOUND as f32 } else {transform.translation.x + JUMP_SIZE};
-            transform.translation.x = jump_x;
+        if keycode.pressed(KeyCode::KeyS){
+            transform.translation.y -= move_dist;
         }
     
        
@@ -151,7 +163,7 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>){
     )
     );
     commands.insert_resource(ShotTimer(Timer::new(Duration::from_secs_f32(SHOT_DELAY), TimerMode::Repeating)));
-
+ 
     commands.spawn(EzTextBundle::new(String::from("Health: "), 60., 20., 20., asset_server.load("fonts/Lakmus.ttf"), Color::rgb(0.9,0.9,0.3),HealthText));
     commands.spawn(EzTextBundle::new(String::from("Shield: "), 60., 80., 20., asset_server.load("fonts/Lakmus.ttf"), Color::rgb(0.9,0.9,0.3),ShieldText));
 
