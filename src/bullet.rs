@@ -3,6 +3,9 @@ use bevy::{math::bounding::{Aabb2d, IntersectsVolume}, prelude::*};
 use crate::{player, enemy};
 const BULLET_DEATH: f32 = 5.;
 
+#[derive(Event, Default)]
+pub struct CollisionEvent;
+
 #[derive(Component)]
 /// Bullet Struct ;)
 pub struct Bullet
@@ -57,7 +60,7 @@ pub fn bullet_movement(
     mut health_query: Query<&mut player::Health>,
     mut commands: Commands,
     mut gizmos: Gizmos,
-    mut collision_events: EventWriter<enemy::CollisionEvent>,
+    mut collision_events: EventWriter<CollisionEvent>,
 ) {
     for (e, mut bullet,  mut b_transform) in &mut sprite_position { // move each bullet 
         // Move the bullet
@@ -137,7 +140,7 @@ fn bullet_collision(bullet: Aabb2d, enemy: Aabb2d) -> Option<bool> {
 
 pub fn play_collision_sound(
     mut commands: Commands,
-    mut collision_events: EventReader<enemy::CollisionEvent>,
+    mut collision_events: EventReader<CollisionEvent>,
     mut asset_server: Res<AssetServer>
 ) {
     // Play a sound once per frame if a collision occurred.

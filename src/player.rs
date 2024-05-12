@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use std::time::Duration;
 
 
-use crate::{bullet};
+use crate::{bullet, game, GameState};
 
 
 
@@ -77,6 +77,7 @@ impl Health {
 
     /// do damage to the entity
     pub fn damage(&mut self, damage: u32){
+        println!("Dealt {} damage!", damage);
         self.shield = if self.shield > 0 {self.shield - damage} else {0};
         self.health = if self.shield <=0 {self.health - damage} else {0};
 
@@ -96,7 +97,8 @@ pub fn sprite_movement(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut gizmos: Gizmos,
-    mut shot_timer: ResMut<ShotTimer>
+    mut shot_timer: ResMut<ShotTimer>,
+    mut game_state: ResMut<NextState<GameState>>,
 ) {
     
     if let Ok((p_ent, mut transform )) = sprite_position.get_single_mut() {
@@ -146,7 +148,7 @@ pub fn sprite_movement(
         }
     }
     else{
-        
+        game_state.set(GameState::Menu);
     }
 }
 

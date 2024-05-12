@@ -3,11 +3,18 @@ use bevy::{core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping}, diag
 
 
 
-mod player;
-mod enemy;
 mod bullet;
+mod enemy;
+mod player;
+mod game;
+mod menu;
 
-
+#[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
+enum GameState {
+    #[default]
+    Menu,
+    Game,
+}
 
 fn main() {
     App::new()
@@ -36,36 +43,9 @@ fn main() {
             LogDiagnosticsPlugin::default(),
             FrameTimeDiagnosticsPlugin,
         ))
-        .add_event::<enemy::CollisionEvent>()
-        .add_systems(Startup, setup)
-        .add_systems(Startup, player::spawn_player)
-        .add_systems(Startup, enemy::init_wave)
-        .add_systems(FixedUpdate, player::sprite_movement)
-        .add_systems(FixedUpdate, bullet::bullet_movement)
-        .add_systems(FixedUpdate, bullet::play_collision_sound)
-        .add_systems(FixedUpdate, enemy::enemy_control)
+        .init_state::<GameState>()
+        .add_plugins(menu::menu_plugin)
+        .add_plugins(game::BulletHellElite)
         .run();
 }
 
-
-/// Setup our game world 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    
-
-    commands.spawn(( //Camera with bloom settings enabled
-        Camera2dBundle {
-            camera: Camera {
-                hdr: true,
-                ..default()
-            },
-            tonemapping: Tonemapping::TonyMcMapface,
-            ..default()
-        },
-        BloomSettings::default(),
-    ));
-
-    
-
-    
-    
-}
