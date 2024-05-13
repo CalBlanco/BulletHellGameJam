@@ -18,8 +18,8 @@ const MOVE_SPEED: f32 = 180.;
 const SHOT_DELAY: f32 = 0.05;
 
 
-const SHIELD_SIZE: i64 = 32_000;
-const HEALTH_SIZE: i64 = 32_000;
+const SHIELD_SIZE: i64 = 500;
+const HEALTH_SIZE: i64 = 500;
 
 const BULLET_DAMAGE: i64 = 20;
 
