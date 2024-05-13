@@ -1,8 +1,9 @@
-use bevy::{diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}, prelude::*, window::{PresentMode, WindowTheme}};
+use bevy::{audio::Volume, diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}, prelude::*, window::{PresentMode, WindowTheme}};
 
 pub const T_BOUND: u16 = 400;
 pub const B_BOUND: f32 = -500.;
 pub const PLAYBACK_SPEED: f32 = 2.0;
+pub const PLAYBACK_VOL: f32 = 0.15;
 
 mod bullet;
 mod enemy;

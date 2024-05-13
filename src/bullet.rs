@@ -1,6 +1,6 @@
 use bevy::{audio::Volume, math::bounding::{Aabb2d, IntersectsVolume}, prelude::*};
 
-use crate::{enemy, game::ScoreBoard, player, PLAYBACK_SPEED};
+use crate::{enemy, game::ScoreBoard, player, PLAYBACK_SPEED, PLAYBACK_VOL};
 use super::{T_BOUND, B_BOUND};
 
 const BULLET_DEATH: f32 = 5.;
@@ -136,7 +136,7 @@ pub fn play_collision_sound(
             // auto-despawn the entity when playback finishes
             settings: PlaybackSettings {
                 mode: bevy::audio::PlaybackMode::Despawn,
-                volume: Volume::new(0.25),
+                volume: Volume::new(PLAYBACK_VOL),
                 speed: PLAYBACK_SPEED,
                 ..default()
             },
@@ -157,6 +157,7 @@ pub fn apply_collision_damage(
         for dmg in collision_events.read() {
             if let Ok(mut health) = health_query.get_mut(dmg.0) {
                 health.damage(dmg.1);
+                
 
                 if !health.is_alive() { // Entity has died from damage
                     //check if we should add score
