@@ -2,6 +2,7 @@ use bevy::{diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}, prelu
 
 pub const T_BOUND: u16 = 400;
 pub const B_BOUND: f32 = -500.;
+pub const PLAYBACK_SPEED: f32 = 2.0;
 
 mod bullet;
 mod enemy;

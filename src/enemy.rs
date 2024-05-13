@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use bevy::{audio::Volume, prelude::*};
 use rand::Rng;
 
-use crate::{bullet, player};
+use crate::{bullet, player, PLAYBACK_SPEED};
 
 use super::T_BOUND;
 
@@ -13,7 +13,22 @@ const R_BOUND: u16 = 500;
 
 const SHOOT_DELAY: f32 = 0.5;
 
-const MOVE_SPEED: f32 = 125.;
+
+// Paths
+const MELEE_PATH: EnemyPath = EnemyPath(|_| 0., |_| 1.5 );
+const LINEAR_PATH: EnemyPath = EnemyPath(|_| 2. , |_| 2. );
+const SPAMMER_PATH: EnemyPath = EnemyPath(|_| 0.75, |y| y.cos() + 0.2 );
+const WAVY_PATH: EnemyPath = EnemyPath(|_| 0.5, |y| y.cos() + 0.1 );
+const SPAWNER_PATH: EnemyPath = EnemyPath(|_| 0.1, |y| (3.0*y).cos() );
+// Shot delays
+const LINEAR_DELAY: (f32, f32) = (0.5, 1.5);
+const SPAMMER_DELAY: (f32, f32) = (0.5, 1.5);
+const SPAWNER_DELAY: (f32, f32) = (3.5, 30.5);
+
+
+const DEFAULT_FALL_SPEED: f32 = 20.;
+
+
 
 #[derive(Component)]
 pub struct Collider;
@@ -44,11 +59,17 @@ impl EnemyType {
     }
 }
 
+/// Container to make paths easier (shoulda done this for bullets too honestly)
+pub struct EnemyPath(fn(f32)->f32, fn(f32)->f32);
+
 #[derive(Component)]
 pub struct Enemy {
     t: EnemyType,
-    dir: i8,
-    last_shot: f32
+    tick: f32,
+    last_shot: f32,
+    x_path: fn(f32) -> f32,
+    y_path: fn(f32) -> f32,
+    shot_range: (f32, f32)
 }
 
 impl Enemy{
@@ -68,7 +89,7 @@ pub struct EnemyBundle {
 
 /// Create a new enemey providing a spawn location, type and asset to render
 impl EnemyBundle {
-    pub fn new(spawn_x: f32, spawn_y: f32, t: EnemyType, asset: Handle<Image>, shield_size: i64, health_size: i64) -> EnemyBundle{
+    pub fn new(spawn_x: f32, spawn_y: f32, t: EnemyType, asset: Handle<Image>, health: player::Health, path: EnemyPath, shot_range: (f32,f32)) -> EnemyBundle{
         EnemyBundle {
             sprite_bundle: SpriteBundle {
                 texture: asset,
@@ -80,14 +101,18 @@ impl EnemyBundle {
                 ..default()
             },
             enemy: Enemy {
-                dir: 1,
+                tick: 0.,
                 t: t,
-                last_shot: 0.
+                last_shot: 0.,
+                x_path: path.0,
+                y_path: path.1,
+                shot_range: shot_range
             },
             collider: Collider,
-            health: player::Health::new(shield_size, health_size)
+            health: health
         }
     }
+
 
 
     
@@ -104,18 +129,21 @@ pub fn enemy_control(
 
 ) {
     for(_, mut transform, mut enemy) in &mut sprite_position{
-        let random_shot_delay: f32 = rand::thread_rng().gen_range(0.1..=0.525);
-        if transform.translation.x <  -(L_BOUND as f32) || transform.translation.x > (R_BOUND as f32) {
-            enemy.dir = enemy.dir * -1;
-            transform.translation.y -= 96.;
-        }
+        enemy.tick += time.delta_seconds();
+        // Implement bounding
+        if transform.translation.y > T_BOUND as f32 { transform.translation.y -= DEFAULT_FALL_SPEED; continue;} // If the enemy is above the screen bounds we want it to drop down to the screen 
+        if transform.translation.x < 0. - L_BOUND as f32 { transform.translation.x = R_BOUND as f32 - 1.; continue; } // Check to make sure we havent moved over the bounds ( if we have pacman across to the other side and continue moving)
+        if transform.translation.x > R_BOUND as f32 { transform.translation.x = 0. - L_BOUND as f32 + 1.; continue; } 
+        // Implmenet Path following
 
-        transform.translation.x += MOVE_SPEED * time.delta_seconds() * enemy.dir as f32;
-
+        transform.translation.y += (enemy.y_path)(enemy.tick) * -1. as f32; // run the y function
+        transform.translation.x += (enemy.x_path)(enemy.tick) * -1. as f32; // run the x function
         
+        // Shot Logic (I wanna change this so they fire individually more often)
         enemy.last_shot += time.delta_seconds();
+        let random_shot_delay: f32 = rand::thread_rng().gen_range(enemy.shot_range.0 .. enemy.shot_range.1);
 
-        if enemy.last_shot > SHOOT_DELAY && transform.translation.y < T_BOUND as f32{
+        if enemy.last_shot > random_shot_delay && transform.translation.y < T_BOUND as f32{
             enemy.last_shot = 0. - random_shot_delay as f32;
             let spawn_x = transform.translation.x;
             let spawn_y = transform.translation.y - 30.;
@@ -129,6 +157,7 @@ pub fn enemy_control(
                         settings: PlaybackSettings {
                             mode: bevy::audio::PlaybackMode::Despawn,
                             volume: Volume::new(0.5),
+                            speed: PLAYBACK_SPEED,
                             ..default()
                         },
                     });
@@ -141,6 +170,7 @@ pub fn enemy_control(
                         settings: PlaybackSettings {
                             mode: bevy::audio::PlaybackMode::Despawn,
                             volume: Volume::new(0.5),
+                            speed: PLAYBACK_SPEED,
                             ..default()
                         },
                     });
@@ -155,15 +185,16 @@ pub fn enemy_control(
                         settings: PlaybackSettings {
                             mode: bevy::audio::PlaybackMode::Despawn,
                             volume: Volume::new(0.5),
+                            speed: PLAYBACK_SPEED,
                             ..default()
                         },
                     });
                 
                 },
                 EnemyType::Spawner => {
-                    let rng_x = rand::thread_rng().gen_range(1..=5);
-                    let rng_y = rand::thread_rng().gen_range(1..=5);
-                    spawn_wave_box(rng_x, rng_y, &mut asset_server, &mut commands);
+                    
+                    let rng_size: u32 = rand::thread_rng().gen_range(2..20);
+                    spawn_wave_box(rng_size, &mut asset_server, &mut commands);
                     enemy.last_shot -= 200.; // Set the spawn timer to have a larger delay than the shoot timer
                     commands.spawn(AudioBundle {
                         source: asset_server.load("sounds/shieldhit.wav"),
@@ -171,6 +202,7 @@ pub fn enemy_control(
                         settings: PlaybackSettings {
                             mode: bevy::audio::PlaybackMode::Despawn,
                             volume: Volume::new(0.5),
+                            speed: PLAYBACK_SPEED,
                             ..default()
                         },
                     });
@@ -183,25 +215,34 @@ pub fn enemy_control(
 }
 
 
-fn spawn_wave_box(wave_rows: u32, wave_cols: u32, asset_server: &mut Res<AssetServer>, commands: &mut Commands) {
-    for x in 1..wave_rows { // spawns offset by 1
-        for y in 0..wave_cols {  // 
-            
-            let spawn_x =  (64. * x as f32 + 32.) - L_BOUND as f32 as f32; 
-            let spawn_y = T_BOUND as f32 + (64 * y) as f32; 
+fn spawn_wave_box(wave_size: u32, asset_server: &mut Res<AssetServer>, commands: &mut Commands) {
+    for _ in 1..wave_size { // spawns offset by 1
+        
+        
+        let spawn_x = rand::thread_rng().gen_range( (0. - L_BOUND as f32)..(R_BOUND as f32));
+        let spawn_y = rand::thread_rng().gen_range( (T_BOUND as f32)..(T_BOUND as f32 + 200.));
 
-            let rng = rand::thread_rng().gen_range(0..=100);
-            match rng {
-                0..=25 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("enemies/melee.png"), 0, 200));},
-                26..=50 => {commands.spawn(EnemyBundle  ::new(spawn_x, spawn_y, EnemyType::Linear, asset_server.load("enemies/basic.png"), 100, 50));},
-                51..=75 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Wavy, asset_server.load("enemies/wavy.png"), 200, 100));},
-                76..=100 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spammer, asset_server.load("enemies/spammer.png"), 200, 100));},
-                _ => ()
-            }
+        let rng = rand::thread_rng().gen_range(0..=100);
+        match rng {
+            0..=25 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("enemies/melee.png"), player::Health::new(0,150), MELEE_PATH, LINEAR_DELAY));},
+            26..=50 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Linear, asset_server.load("enemies/basic.png"), player::Health::new(0,150), LINEAR_PATH, LINEAR_DELAY));},
+            51..=75 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Wavy, asset_server.load("enemies/wavy.png"), player::Health::new(0,150), WAVY_PATH, LINEAR_DELAY));},
+            76..=100 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spammer, asset_server.load("enemies/spammer.png"), player::Health::new(0,150), SPAMMER_PATH, SPAMMER_DELAY));},
+            _ => ()
         }
+
+        
+        
     }
 
-    commands.spawn(EnemyBundle::new(0.-L_BOUND as f32, T_BOUND as f32, EnemyType::Spawner, asset_server.load("enemies/spawner.png"), 400, 100)); // always spawn a spawner in the wave
+    let rng = rand::thread_rng().gen_range(2..4);
+    for _ in 1..rng {
+        let r_x = rand::thread_rng().gen_range( (0. - L_BOUND as f32)..(R_BOUND as f32));
+        let r_y = rand::thread_rng().gen_range( (T_BOUND as f32)..(T_BOUND as f32 + 200.));
+
+        commands.spawn(EnemyBundle::new(r_x, r_y, EnemyType::Spawner, asset_server.load("enemies/spawner.png"), player::Health::new(0,150), SPAWNER_PATH, SPAWNER_DELAY));
+    }
+
 }
 
 
@@ -210,5 +251,5 @@ pub fn init_wave(
     mut commands: Commands,
     mut asset_server: Res<AssetServer>
 ){
-        spawn_wave_box(10, 4, &mut asset_server, &mut commands)
+        spawn_wave_box(20, &mut asset_server, &mut commands)
 }
