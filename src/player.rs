@@ -2,7 +2,7 @@ use bevy::{audio::Volume, prelude::*};
 use std::time::Duration;
 
 
-use crate::{bullet, game, GameState};
+use crate::{bullet, game::{self, ScoreBoard}, GameState, PLAYBACK_SPEED};
 
 use super::{EzTextBundle, B_BOUND};
 
@@ -18,8 +18,10 @@ const MOVE_SPEED: f32 = 180.;
 const SHOT_DELAY: f32 = 0.05;
 
 
-const SHIELD_SIZE: i64 = 400;
-const HEALTH_SIZE: i64 = 200;
+const SHIELD_SIZE: i64 = 32_000;
+const HEALTH_SIZE: i64 = 32_000;
+
+const BULLET_DAMAGE: i64 = 20;
 
 
 #[derive(Resource)]
@@ -94,6 +96,7 @@ pub fn sprite_movement(
     asset_server: Res<AssetServer>,
     mut shot_timer: ResMut<ShotTimer>,
     mut game_state: ResMut<NextState<GameState>>,
+    scoreboard: Res<ScoreBoard>,
 ) {
     
     if let Ok((_, mut transform )) = sprite_position.get_single_mut() {
@@ -144,12 +147,16 @@ pub fn sprite_movement(
                 settings: PlaybackSettings {
                     mode: bevy::audio::PlaybackMode::Despawn,
                     volume: Volume::new(0.25),
+                    speed: PLAYBACK_SPEED,
                     ..default()
                 },
             });
-            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| 5.*(a).cos()  ,  0.,  true, 60), asset_server.load("plasma_blue.png")));
-            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| -5.*(a).cos()  ,  0.,  true, 60), asset_server.load("plasma_blue.png")));
-            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 30., |_| 0.  ,  0.,  true, 20), asset_server.load("plasma_green.png")));
+
+            let bullet_damage = BULLET_DAMAGE * (scoreboard.get_mul() + 1) as i64;
+
+            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| 5.*(a).cos()  ,  0.,  true, bullet_damage), asset_server.load("plasma_blue.png")));
+            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| -5.*(a).cos()  ,  0.,  true, bullet_damage), asset_server.load("plasma_blue.png")));
+            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 30., |_| 0.  ,  0.,  true, bullet_damage), asset_server.load("plasma_green.png")));
         }
     }
     else{

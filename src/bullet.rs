@@ -1,6 +1,6 @@
 use bevy::{audio::Volume, math::bounding::{Aabb2d, IntersectsVolume}, prelude::*};
 
-use crate::{enemy::{self}, game::ScoreBoard, player};
+use crate::{enemy, game::ScoreBoard, player, PLAYBACK_SPEED};
 use super::{T_BOUND, B_BOUND};
 
 const BULLET_DEATH: f32 = 5.;
@@ -137,6 +137,7 @@ pub fn play_collision_sound(
             settings: PlaybackSettings {
                 mode: bevy::audio::PlaybackMode::Despawn,
                 volume: Volume::new(0.25),
+                speed: PLAYBACK_SPEED,
                 ..default()
             },
         });
