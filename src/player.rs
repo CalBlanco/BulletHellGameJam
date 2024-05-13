@@ -18,8 +18,8 @@ const MOVE_SPEED: f32 = 180.;
 const SHOT_DELAY: f32 = 0.05;
 
 
-const SHIELD_SIZE: i64 = 500;
-const HEALTH_SIZE: i64 = 500;
+const SHIELD_SIZE: i64 = 32_500;
+const HEALTH_SIZE: i64 = 32_500;
 
 const BULLET_DAMAGE: i64 = 20;
 
@@ -37,9 +37,64 @@ pub struct ShieldTimer(Timer);
 /// Player information / tag
 pub struct PlayerControlled;
 
+pub struct BulletBlueprint(pub i8, pub fn(f32)->f32, pub fn(f32)->f32, pub f32, pub bool, pub i64);
 
 #[derive(Component)]
-pub struct ShieldSprite;
+pub struct Gun {
+    bullet_blueprints: Vec<BulletBlueprint>,
+    damage: i64,
+    shoot_delay: f32,
+    max_bullets: u8,
+    pub shot_timer: ShotTimer
+}
+
+impl Gun {
+    pub fn new(starting_bullets: Vec<BulletBlueprint>, init_shoot_delay: f32, init_damage: i64, max_bullets: u8) -> Gun{    
+        Gun {
+            bullet_blueprints: if starting_bullets.is_empty() { Vec::new()} else {starting_bullets},
+            damage: init_damage,
+            shoot_delay: init_shoot_delay,
+            max_bullets: max_bullets,
+            shot_timer: ShotTimer(Timer::from_seconds(init_shoot_delay, TimerMode::Repeating))
+        }
+    }
+
+    pub fn add_bullet(&mut self, blueprint: BulletBlueprint){
+        if self.bullet_blueprints.len() < self.max_bullets as usize {
+            self.bullet_blueprints.push(blueprint)
+        }
+    }
+
+    fn get_bullets(&self) -> &Vec<BulletBlueprint> { &self.bullet_blueprints }
+
+    pub fn set_bullet_delay(&mut self, new_delay: f32) {
+
+        self.shoot_delay = if  new_delay > 0. {new_delay} else {0.01};
+        self.shot_timer.0.set_duration(Duration::from_secs_f32(self.shoot_delay));
+    }
+
+    pub fn get_bullet_delay(&self) -> f32 { self.shoot_delay }
+
+    pub fn set_bullet_damage(&mut self, new_damage: i64) {
+        self.damage = new_damage;
+    }
+
+    pub fn get_bullet_damage(&self) -> i64{
+        self.damage
+    }
+
+    pub fn tick_time(&mut self, time: Duration){
+        self.shot_timer.0.tick(time);
+    }
+
+    pub fn can_shoot(&self) -> bool {
+        self.shot_timer.0.finished()
+    }
+
+    pub fn reset_shot_timer(&mut self){
+        self.shot_timer.0.reset();
+    }
+}
 
 
 #[derive(Component)]
@@ -101,17 +156,16 @@ impl Health {
 
 pub fn sprite_movement(
     time: Res<Time>, 
-    mut sprite_position: Query<(Entity, &mut Transform), With<PlayerControlled>>,
+    mut sprite_position: Query<(Entity, &mut Transform, &mut Gun), With<PlayerControlled>>,
     keycode: Res<ButtonInput<KeyCode>>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut shot_timer: ResMut<ShotTimer>,
     mut game_state: ResMut<NextState<GameState>>,
-    scoreboard: Res<ScoreBoard>,
 ) {
     
-    if let Ok((_, mut transform )) = sprite_position.get_single_mut() {
-        shot_timer.0.tick(time.delta());
+    if let Ok((_, mut transform , mut gun)) = sprite_position.get_single_mut() {
+        gun.tick_time(time.delta());
 
         //gizmos.rect_2d(transform.translation.truncate(), 0., Vec2::new(32., 32.), Color::rgb(1.,1.,0.));
 
@@ -150,8 +204,8 @@ pub fn sprite_movement(
     
        
         // Shoot 
-        if keycode.pressed(KeyCode::Space) && shot_timer.0.finished() {
-            shot_timer.0.reset();
+        if keycode.pressed(KeyCode::Space) && gun.can_shoot() {
+            gun.reset_shot_timer();
             commands.spawn(AudioBundle {
                 source: asset_server.load("sounds/laser_0.wav"),
                 // auto-despawn the entity when playback finishes
@@ -163,11 +217,17 @@ pub fn sprite_movement(
                 },
             });
 
-            let bullet_damage = BULLET_DAMAGE * (scoreboard.get_mul() + 1) as i64;
+            
 
-            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| 5.*(a).cos()  ,  0.,  true, bullet_damage), asset_server.load("plasma_blue.png")));
+            let bullets = gun.get_bullets();
+
+            for bul in bullets {
+                commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new(bul.0, bul.1, bul.2, bul.3, bul.4, bul.5), asset_server.load("plasma_blue.png")));
+            }
+
+            /* commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| 5.*(a).cos()  ,  0.,  true, bullet_damage), asset_server.load("plasma_blue.png")));
             commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| -5.*(a).cos()  ,  0.,  true, bullet_damage), asset_server.load("plasma_blue.png")));
-            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 30., |_| 0.  ,  0.,  true, bullet_damage), asset_server.load("plasma_green.png")));
+            commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 30., |_| 0.  ,  0.,  true, bullet_damage), asset_server.load("plasma_green.png"))); */
         }
     }
     else{
@@ -176,19 +236,40 @@ pub fn sprite_movement(
 }
 
 
+#[derive(Bundle)]
+pub struct PlayerBundle {
+    sprite_bundle: SpriteBundle,
+    control: PlayerControlled,
+    health: Health,
+    gun: Gun
+}
+
+impl PlayerBundle {
+    fn new(asset: Handle<Image>) -> PlayerBundle {
+        let mut starting_bullets = Vec::new();
+        starting_bullets.push(BulletBlueprint(1,|_| 20., |x| x.cos(), 0., true, 50));
+        starting_bullets.push(BulletBlueprint(1,|_| 20., |x| -x.cos(), 0., true, 50));
+        starting_bullets.push(BulletBlueprint(1,|_| 20., |_: f32| 0., 0., true, 50));
+        starting_bullets.push(BulletBlueprint(1,|_| 2., |x| 10.*x.cos(), 0., true, 50));
+        PlayerBundle {
+            sprite_bundle: SpriteBundle {
+                texture: asset,
+                transform: Transform::from_xyz(SPAWN_X, SPAWN_Y, 1.),
+                ..default()
+            },
+            control: PlayerControlled,
+            health: Health::new(SHIELD_SIZE, HEALTH_SIZE, 2.0),
+            gun: Gun::new(starting_bullets, SHOT_DELAY, BULLET_DAMAGE, 20),
+        }
+    } 
+}
+
 pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>){
     
     let asset = asset_server.load("player.png");
     
-    commands.spawn((
-        SpriteBundle {
-            texture: asset,
-            transform: Transform::from_xyz(SPAWN_X, SPAWN_Y, 1.),
-            ..default()
-        },
-        PlayerControlled,
-        Health::new(SHIELD_SIZE, HEALTH_SIZE, 2.0)
-    )
+    commands.spawn(
+        PlayerBundle::new(asset)
     );
 
     commands.insert_resource(ShotTimer(Timer::new(Duration::from_secs_f32(SHOT_DELAY), TimerMode::Repeating)));

@@ -1,4 +1,5 @@
 use bevy::{audio::Volume, math::bounding::{Aabb2d, IntersectsVolume}, prelude::*};
+use rand::Rng;
 
 use crate::{enemy, game::ScoreBoard, player, PLAYBACK_SPEED, PLAYBACK_VOL};
 use super::{T_BOUND, B_BOUND};
@@ -151,6 +152,7 @@ pub fn apply_collision_damage(
     mut commands: Commands,
     mut score_events: EventWriter<ScoreEvent>,
     enemy_query: Query<&enemy::Enemy, With<enemy::Collider>>,
+    mut gun_query: Query<&mut player::Gun, With<player::PlayerControlled>>
 ){
     if !collision_events.is_empty() {
         // This prevents events staying active on the next frame.
@@ -166,7 +168,35 @@ pub fn apply_collision_damage(
                     if !dmg.2 { // not a player dying 
                         if let Ok(en) = enemy_query.get(dmg.0) {
                             let (score, mul) = en.get_type().get_score();
-                            score_events.send(ScoreEvent(score, mul));    
+                            score_events.send(ScoreEvent(score, mul));
+
+                            if let Ok(mut gun) = gun_query.get_single_mut() {
+                                let gun_damage = gun.get_bullet_damage(); // get gun damage and speed 
+                                let gun_speed: f32 = gun.get_bullet_delay();
+
+                                match en.get_type() { // match type for reward / consequence 
+                                    enemy::EnemyType::Spawner => {
+                                       
+                                        let b_choice = rand::thread_rng().gen_range(0..4);
+                                        match b_choice {
+                                            0 => gun.add_bullet(player::BulletBlueprint(1, |y| y*y, |_| 0., 0., true, 50)),
+                                            1 => gun.add_bullet(player::BulletBlueprint(1, |y| y*y, |x| x.cos(), 0., true, 50)),
+                                            2 => gun.add_bullet(player::BulletBlueprint(1, |y| 2., |x| 10.*x.cos(), 0., true, 50)),
+                                            3 => gun.add_bullet(player::BulletBlueprint(1, |y| 10., |x| x*x, 0., true, 50)),
+                                            _ => gun.add_bullet(player::BulletBlueprint(1, |y| y*y, |x| x*x, 0., true, 50))
+                                        }
+                                        
+                                    }
+                                    enemy::EnemyType::Wavy => {
+                                        gun.set_bullet_damage(gun_damage + 30)
+                                    },
+                                    enemy::EnemyType::Spammer => {
+                                        gun.set_bullet_delay(gun_speed - 0.0015)
+                                    },
+                                    enemy::EnemyType::Linear => {},
+                                    enemy::EnemyType::Melee => {}
+                                }    
+                            }
                         }
                         
                     }    
