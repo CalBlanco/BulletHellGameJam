@@ -42,7 +42,7 @@ impl Plugin for BulletHellElite {
             .add_event::<bullet::ScoreEvent>()
             .insert_resource(ScoreBoard {score: 0, mul: 1})
             .add_systems(OnEnter(GameState::Game),(setup, player::spawn_player, enemy::init_wave).before(player::sprite_movement))
-            .add_systems(FixedUpdate, (player::sprite_movement, bullet::bullet_movement, bullet::play_collision_sound, bullet::apply_collision_damage, bullet::update_score, enemy::enemy_control, player::update_player_health, player::update_player_shield, player::update_player_score, move_background_image).run_if(in_state(GameState::Game)))
+            .add_systems(FixedUpdate, (player::sprite_movement, bullet::bullet_movement, bullet::play_collision_sound, bullet::apply_collision_damage, bullet::update_score, enemy::enemy_control, player::update_player_health, player::update_player_shield, player::update_player_score, player::shield_tick, move_background_image).run_if(in_state(GameState::Game)))
             .add_systems(OnExit(GameState::Game), cleanup);
     }
 }

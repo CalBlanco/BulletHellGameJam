@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use bevy::{audio::Volume, prelude::*};
 use rand::Rng;
 
-use crate::{bullet, player, PLAYBACK_SPEED};
+use crate::{bullet, player, PLAYBACK_SPEED, PLAYBACK_VOL};
 
 use super::T_BOUND;
 
@@ -154,7 +154,7 @@ pub fn enemy_control(
                         // auto-despawn the entity when playback finishes
                         settings: PlaybackSettings {
                             mode: bevy::audio::PlaybackMode::Despawn,
-                            volume: Volume::new(0.5),
+                            volume: Volume::new(PLAYBACK_VOL),
                             speed: PLAYBACK_SPEED,
                             ..default()
                         },
@@ -167,7 +167,7 @@ pub fn enemy_control(
                         // auto-despawn the entity when playback finishes
                         settings: PlaybackSettings {
                             mode: bevy::audio::PlaybackMode::Despawn,
-                            volume: Volume::new(0.5),
+                            volume: Volume::new(PLAYBACK_VOL),
                             speed: PLAYBACK_SPEED,
                             ..default()
                         },
@@ -182,7 +182,7 @@ pub fn enemy_control(
                         // auto-despawn the entity when playback finishes
                         settings: PlaybackSettings {
                             mode: bevy::audio::PlaybackMode::Despawn,
-                            volume: Volume::new(0.5),
+                            volume: Volume::new(PLAYBACK_VOL),
                             speed: PLAYBACK_SPEED,
                             ..default()
                         },
@@ -199,7 +199,7 @@ pub fn enemy_control(
                         // auto-despawn the entity when playback finishes
                         settings: PlaybackSettings {
                             mode: bevy::audio::PlaybackMode::Despawn,
-                            volume: Volume::new(0.5),
+                            volume: Volume::new(PLAYBACK_VOL),
                             speed: PLAYBACK_SPEED,
                             ..default()
                         },
@@ -222,10 +222,10 @@ fn spawn_wave_box(wave_size: u32, asset_server: &mut Res<AssetServer>, commands:
 
         let rng = rand::thread_rng().gen_range(0..=100);
         match rng {
-            0..=25 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("enemies/melee.png"), player::Health::new(0,150), MELEE_PATH, LINEAR_DELAY));},
-            26..=50 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Linear, asset_server.load("enemies/basic.png"), player::Health::new(0,150), LINEAR_PATH, LINEAR_DELAY));},
-            51..=75 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Wavy, asset_server.load("enemies/wavy.png"), player::Health::new(0,150), WAVY_PATH, LINEAR_DELAY));},
-            76..=100 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spammer, asset_server.load("enemies/spammer.png"), player::Health::new(0,150), SPAMMER_PATH, SPAMMER_DELAY));},
+            0..=25 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("enemies/melee.png"), player::Health::new(20,150, 1.5), MELEE_PATH, LINEAR_DELAY));},
+            26..=50 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Linear, asset_server.load("enemies/basic.png"), player::Health::new(0,150, 0.0), LINEAR_PATH, LINEAR_DELAY));},
+            51..=75 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Wavy, asset_server.load("enemies/wavy.png"), player::Health::new(150,150, 3.0), WAVY_PATH, LINEAR_DELAY));},
+            76..=100 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spammer, asset_server.load("enemies/spammer.png"), player::Health::new(100,150, 3.0), SPAMMER_PATH, SPAMMER_DELAY));},
             _ => ()
         }
 
@@ -238,7 +238,7 @@ fn spawn_wave_box(wave_size: u32, asset_server: &mut Res<AssetServer>, commands:
         let r_x = rand::thread_rng().gen_range( (0. - L_BOUND as f32)..(R_BOUND as f32));
         let r_y = rand::thread_rng().gen_range( (T_BOUND as f32)..(T_BOUND as f32 + 200.));
 
-        commands.spawn(EnemyBundle::new(r_x, r_y, EnemyType::Spawner, asset_server.load("enemies/spawner.png"), player::Health::new(0,150), SPAWNER_PATH, SPAWNER_DELAY));
+        commands.spawn(EnemyBundle::new(r_x, r_y, EnemyType::Spawner, asset_server.load("enemies/spawner.png"), player::Health::new(200,250, 3.0), SPAWNER_PATH, SPAWNER_DELAY));
     }
 
 }
