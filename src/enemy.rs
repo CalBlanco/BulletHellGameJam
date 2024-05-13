@@ -11,8 +11,6 @@ const L_BOUND: u16 = 500;
 const R_BOUND: u16 = 500;
 
 
-const SHOOT_DELAY: f32 = 0.5;
-
 
 // Paths
 const MELEE_PATH: EnemyPath = EnemyPath(|_| 0., |_| 1.5 );
