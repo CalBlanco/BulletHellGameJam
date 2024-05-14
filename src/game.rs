@@ -1,6 +1,6 @@
 use bevy::{core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping}, prelude::*};
 
-use crate::{bullet, enemy, health, player};
+use crate::{bullet, enemy, explosion, health, player};
 use super::GameState;
 
 
@@ -41,7 +41,7 @@ impl Plugin for BulletHellElite {
             .add_event::<bullet::CollisionEvent>()
             .add_event::<bullet::ScoreEvent>()
             .insert_resource(ScoreBoard {score: 0, mul: 1})
-            .add_systems(OnEnter(GameState::Game),(setup, player::spawn_player, enemy::init_wave).before(player::sprite_movement))
+            .add_systems(OnEnter(GameState::Game),(setup, player::spawn_player, enemy::init_wave, explosion::setup).before(player::sprite_movement))
             .add_systems(FixedUpdate, (
                 player::sprite_movement, 
                 bullet::bullet_movement, 

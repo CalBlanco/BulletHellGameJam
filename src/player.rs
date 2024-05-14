@@ -4,12 +4,11 @@ use bevy::{audio::Volume, prelude::*};
 
 use crate::{bullet, game::{self}, gun, health, GameState, PLAYBACK_SPEED, PLAYBACK_VOL};
 
-use super::{EzTextBundle, B_BOUND};
+use super::{EzTextBundle, B_BOUND, L_BOUND, R_BOUND};
 
 
 
-const L_BOUND: u16 = 500;
-const R_BOUND: u16 = 500;
+
 const PLAYER_T_BOUND: f32 = -200.;
 const SPAWN_X: f32 = 0.;
 const SPAWN_Y: f32 = B_BOUND + 100.;
@@ -18,8 +17,8 @@ const MOVE_SPEED: f32 = 180.;
 const SHOT_DELAY: f32 = 0.05;
 
 
-const SHIELD_SIZE: i64 = 32_500;
-const HEALTH_SIZE: i64 = 32_500;
+const SHIELD_SIZE: i64 = 500;
+const HEALTH_SIZE: i64 = 500;
 
 const BULLET_DAMAGE: i64 = 20;
 
@@ -91,7 +90,7 @@ pub fn sprite_movement(
         if keycode.pressed(KeyCode::Space) && gun.can_shoot() {
             gun.reset_shot_timer();
             commands.spawn(AudioBundle {
-                source: asset_server.load("sounds/laser_0.wav"),
+                source: asset_server.load("sounds/laser.wav"),
                 // auto-despawn the entity when playback finishes
                 settings: PlaybackSettings {
                     mode: bevy::audio::PlaybackMode::Despawn,
@@ -131,10 +130,10 @@ pub struct PlayerBundle {
 impl PlayerBundle {
     fn new(asset: Handle<Image>) -> PlayerBundle {
         let mut starting_bullets = Vec::new();
-        starting_bullets.push(gun::BulletBlueprint(1,|_| 20., |x| x.cos(), 0., true, 50));
-        starting_bullets.push(gun::BulletBlueprint(1,|_| 20., |x| -x.cos(), 0., true, 50));
+        starting_bullets.push(gun::BulletBlueprint(1,|_| 5., |x| 5.*(x*10.).cos(), 0., true, 50));
+        starting_bullets.push(gun::BulletBlueprint(1,|_| 5., |x| -5.*((1./x)*10.).cos(), 0., true, 50));
         starting_bullets.push(gun::BulletBlueprint(1,|_| 20., |_: f32| 0., 0., true, 50));
-        starting_bullets.push(gun::BulletBlueprint(1,|_| 2., |x| 10.*x.cos(), 0., true, 50));
+       
         PlayerBundle {
             sprite_bundle: SpriteBundle {
                 texture: asset,
@@ -142,7 +141,7 @@ impl PlayerBundle {
                 ..default()
             },
             control: PlayerControlled,
-            health: health::Health::new(SHIELD_SIZE, HEALTH_SIZE, 2.0),
+            health: health::Health::new(SHIELD_SIZE, HEALTH_SIZE, 2.0, 20),
             gun: gun::Gun::new(starting_bullets, SHOT_DELAY, BULLET_DAMAGE, 20),
         }
     } 

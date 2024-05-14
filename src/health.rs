@@ -11,17 +11,19 @@ pub struct Health {
     shield: i64,
     health: i64,
     is_alive: bool,
-    pub timer: ShieldTimer
+    pub timer: ShieldTimer,
+    shield_recharge: i64
 }
 
 impl Health {
     /// Create a new health component specifying shield size, and health
-    pub fn new(shield_size: i64, health_size: i64, shield_time: f32) -> Health {
+    pub fn new(shield_size: i64, health_size: i64, shield_time: f32, shield_recharge: i64) -> Health {
         Health {
             shield: shield_size,
             health: health_size,
             is_alive: true,
-            timer: ShieldTimer(Timer::new(Duration::from_secs_f32(shield_time), TimerMode::Repeating)) 
+            timer: ShieldTimer(Timer::new(Duration::from_secs_f32(shield_time), TimerMode::Repeating)),
+            shield_recharge: shield_recharge
         }
     }
 
