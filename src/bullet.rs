@@ -55,6 +55,7 @@ impl BulletBundle{
             bullet: bullet
         }
     }
+
 }
 
 
@@ -144,7 +145,7 @@ pub fn play_collision_sound(
         });
     }
 }
-
+//Its really not good im doing all this inside this function lmao
 /// Event for processing damage
 pub fn apply_collision_damage(
     mut health_query: Query<&mut health::Health>,
@@ -175,13 +176,13 @@ pub fn apply_collision_damage(
                                 match en.get_type() { // match type for reward / consequence 
                                     enemy::EnemyType::Spawner => {
                                        
-                                        let b_choice = rand::thread_rng().gen_range(0..4);
+                                        let b_choice = rand::thread_rng().gen_range(0..5);
                                         match b_choice {
                                             0 => gun.add_bullet(gun::BulletBlueprint(1, |y| y*y, |_| 0., 0., true, 50)),
-                                            1 => gun.add_bullet(gun::BulletBlueprint(1, |y| y*y, |x| x.cos(), 0., true, 50)),
-                                            2 => gun.add_bullet(gun::BulletBlueprint(1, |_| 2., |x| 10.*x.cos(), 0., true, 50)),
-                                            3 => gun.add_bullet(gun::BulletBlueprint(1, |_| 10., |x| x*x, 0., true, 50)),
-                                            _ => gun.add_bullet(gun::BulletBlueprint(1, |y| y*y, |x| x*x, 0., true, 50))
+                                            1 => gun.add_bullet(gun::BulletBlueprint(1, |y| y*y, |_| 5., 0., true, 50)),
+                                            2 => gun.add_bullet(gun::BulletBlueprint(1, |y| y*y, |_| -5., 0., true, 50)),
+                                            3 => gun.add_bullet(gun::BulletBlueprint(1, |_| 10., |_| 5., 0., true, 50)),
+                                            _ => gun.add_bullet(gun::BulletBlueprint(1, |_| 10., |_| -5., 0., true, 50))
                                         }
                                         
                                     }

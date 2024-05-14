@@ -2,18 +2,21 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
+
 #[derive(Resource)]
+/// Timer for shots (does not apply to AI as they have a range used by their own logic)
 pub struct ShotTimer(Timer);
 
 
 // Implement a bullet blueprint allowing for quick instantiation of bullet objects without taking space on the heap until needed
-/// dir: i8, fy: fn(f32)->f32, fx: fn(f32)->f32, tick: f32, team: bool, damage: i64
+/// Bullet blueprint for constant storage of certain types:  (**dir**:*i8*, **fy**:*fn(f32)->f32*, **fx**:*fn(f32)->f32*, **tick**:*f32*, **team**:*bool*, **damage**:*i64*)
 pub struct BulletBlueprint(pub i8, pub fn(f32)->f32, pub fn(f32)->f32, pub f32, pub bool, pub i64);
 
-/// shot delay: f32, damage: i64, max bullets: u8
+/// Gun Blueprint for constant storage of certain gun types:  (**shoot_delay**:*f32*, **damage**:*i64*, **max_bullets**:*u8*)
 pub struct GunBluePrint(pub f32, pub i64, pub u8);
 
 #[derive(Component)]
+///
 pub struct Gun {
     bullet_blueprints: Vec<BulletBlueprint>,
     damage: i64,
@@ -53,7 +56,7 @@ impl Gun {
 
     pub fn set_bullet_delay(&mut self, new_delay: f32) {
 
-        self.shoot_delay = if  new_delay > 0. {new_delay} else {0.01};
+        self.shoot_delay = if  new_delay >= 0.03 {new_delay} else {0.03};
         self.shot_timer.0.set_duration(Duration::from_secs_f32(self.shoot_delay));
     }
 
