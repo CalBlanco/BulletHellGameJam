@@ -1,7 +1,10 @@
 use bevy::{diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}, prelude::*, window::{PresentMode, WindowTheme}};
+use bevy_hanabi::prelude::*;
 
 pub const T_BOUND: u16 = 400;
 pub const B_BOUND: f32 = -500.;
+const L_BOUND: u16 = 500;
+const R_BOUND: u16 = 500;
 pub const PLAYBACK_SPEED: f32 = 2.0;
 pub const PLAYBACK_VOL: f32 = 0.15;
 
@@ -13,6 +16,7 @@ mod menu;
 mod music;
 mod health;
 mod gun;
+mod explosion;
 
 #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
 enum GameState {
@@ -48,6 +52,7 @@ fn main() {
             LogDiagnosticsPlugin::default(),
             FrameTimeDiagnosticsPlugin,
         ))
+        .add_plugins(HanabiPlugin)
         .init_state::<GameState>()
         .add_plugins(menu::menu_plugin)
         .add_plugins(game::BulletHellElite)

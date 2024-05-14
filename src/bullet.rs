@@ -1,8 +1,9 @@
-use bevy::{audio::Volume, math::bounding::{Aabb2d, IntersectsVolume}, prelude::*};
+use bevy::{audio::Volume, math::bounding::{Aabb2d, BoundingCircle, IntersectsVolume}, prelude::*};
+use bevy_hanabi::{EffectAsset, EffectProperties, EffectSpawner, ParticleEffect, ParticleEffectBundle, Spawner};
 use rand::Rng;
 
-use crate::{enemy, game::ScoreBoard, gun, health, player, PLAYBACK_SPEED, PLAYBACK_VOL};
-use super::{T_BOUND, B_BOUND};
+use crate::{enemy, explosion, game::ScoreBoard, gun, health, player, PLAYBACK_SPEED, PLAYBACK_VOL};
+use super::{T_BOUND, B_BOUND, L_BOUND, R_BOUND};
 
 const BULLET_DEATH: f32 = 5.;
 
@@ -76,6 +77,13 @@ pub fn bullet_movement(
             continue;
         }
 
+        if b_transform.translation.x < 0. - L_BOUND as f32 {
+            b_transform.translation.x = R_BOUND as f32 - 1.;
+        }
+        if b_transform.translation.x > R_BOUND as f32 {
+            b_transform.translation.x = 0. - L_BOUND as f32 + 1.; 
+        }
+
         bullet.update(time.delta_seconds());
         
         b_transform.translation.y += (bullet.fy)(bullet.tick) * bullet.dir as f32; // run the y function
@@ -124,6 +132,14 @@ fn bullet_collision(bullet: Aabb2d, enemy: Aabb2d) -> Option<bool> {
 }
 
 
+fn explosion_collision(circle: BoundingCircle, square: Aabb2d) -> Option<bool> {
+    if circle.intersects(&square) {
+        return Some(true)
+    }else {
+        return None
+    }
+}
+
 pub fn play_collision_sound(
     mut commands: Commands,
     mut collision_events: EventReader<CollisionEvent>,
@@ -152,8 +168,13 @@ pub fn apply_collision_damage(
     mut collision_events: EventReader<CollisionEvent>,
     mut commands: Commands,
     mut score_events: EventWriter<ScoreEvent>,
-    enemy_query: Query<&enemy::Enemy, With<enemy::Collider>>,
-    mut gun_query: Query<&mut gun::Gun, With<player::PlayerControlled>>
+    enemy_query: Query<(Entity, &enemy::Enemy, &Transform), (With<enemy::Collider>, Without<EffectProperties>)>,
+    mut gun_query: Query<&mut gun::Gun, With<player::PlayerControlled>>,
+    mut effect: Query<(
+        &mut EffectProperties,
+        &mut EffectSpawner,
+        &mut Transform,
+    )>,
 ){
     if !collision_events.is_empty() {
         // This prevents events staying active on the next frame.
@@ -165,11 +186,16 @@ pub fn apply_collision_damage(
                 if !health.is_alive() { // Entity has died from damage
                     //check if we should add score
                     if !dmg.2 { // not a player dying 
-                        if let Ok(en) = enemy_query.get(dmg.0) {
+                        
+
+                        if let Ok((_, en, transform)) = enemy_query.get(dmg.0) { // enemy killed 
+
+                            
+
                             let (score, mul) = en.get_type().get_score();
                             score_events.send(ScoreEvent(score, mul));
 
-                            if let Ok(mut gun) = gun_query.get_single_mut() {
+                            if let Ok(mut gun) = gun_query.get_single_mut() { // Gun Upgrades from kills
                                 let gun_damage = gun.get_bullet_damage(); // get gun damage and speed 
                                 let gun_speed: f32 = gun.get_bullet_delay();
 
@@ -195,6 +221,33 @@ pub fn apply_collision_damage(
                                     enemy::EnemyType::Linear => {},
                                     enemy::EnemyType::Melee => {}
                                 }    
+                            }
+
+                            let Ok((
+                                mut properties,
+                                mut spawner,
+                                mut effect_transform,
+                            )) = effect.get_single_mut()
+                            else {
+                                warn!("effect not ready yet, returning");
+                                return;
+                            };
+
+                            let color = Color::lch(1., 1., rand::random::<f32>() * 360.);
+                            properties.set(
+                                "spawn_color",
+                                color.as_linear_rgba_u32().into(),
+                            );
+
+                            effect_transform.translation = transform.translation;
+                            spawner.reset(); // spawn the effect 
+
+
+                            for (e, enemy, effected_transform) in enemy_query.iter() {
+                                if let Some(_) = explosion_collision(BoundingCircle::new(transform.translation.truncate(), 32.), Aabb2d::new(effected_transform.translation.truncate(), effect_transform.scale.truncate()/2.)){
+                                    let Ok(mut e_health) = health_query.get_mut(e) else {return;};
+                                    e_health.damage(20);
+                                }
                             }
                         }
                         
