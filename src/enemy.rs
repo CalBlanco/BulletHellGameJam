@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use bevy::{audio::Volume, prelude::*};
 use rand::Rng;
 
-use crate::{bullet, player, PLAYBACK_SPEED, PLAYBACK_VOL};
+use crate::{bullet, player, B_BOUND, PLAYBACK_SPEED, PLAYBACK_VOL};
 
 use super::T_BOUND;
 
@@ -132,7 +132,10 @@ pub fn enemy_control(
         if transform.translation.y > T_BOUND as f32 { transform.translation.y -= DEFAULT_FALL_SPEED; continue;} // If the enemy is above the screen bounds we want it to drop down to the screen 
         if transform.translation.x < 0. - L_BOUND as f32 { transform.translation.x = R_BOUND as f32 - 1.; continue; } // Check to make sure we havent moved over the bounds ( if we have pacman across to the other side and continue moving)
         if transform.translation.x > R_BOUND as f32 { transform.translation.x = 0. - L_BOUND as f32 + 1.; continue; } 
-        // Implmenet Path following
+        if transform.translation.y < B_BOUND { 
+            transform.translation.y = T_BOUND as f32 + 50.;
+            spawn_wave_box(2, &mut asset_server, &mut commands); // Consequence of letting an enemy get to the bottom
+        }
 
         transform.translation.y += (enemy.y_path)(enemy.tick) * -1. as f32; // run the y function
         transform.translation.x += (enemy.x_path)(enemy.tick) * -1. as f32; // run the x function
