@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use bevy::{audio::Volume, prelude::*};
 use rand::Rng;
 
-use crate::{bullet, player, B_BOUND, PLAYBACK_SPEED, PLAYBACK_VOL};
+use crate::{bullet::{self, BulletBundle}, gun, health, B_BOUND, PLAYBACK_SPEED, PLAYBACK_VOL};
 
 use super::T_BOUND;
 
@@ -18,11 +18,24 @@ const LINEAR_PATH: EnemyPath = EnemyPath(|_| 2. , |_| 2. );
 const SPAMMER_PATH: EnemyPath = EnemyPath(|_| 0.75, |y| y.cos() + 0.2 );
 const WAVY_PATH: EnemyPath = EnemyPath(|_| 0.5, |y| y.cos() + 0.1 );
 const SPAWNER_PATH: EnemyPath = EnemyPath(|_| 0.1, |y| (3.0*y).cos() );
-// Shot delays
-const LINEAR_DELAY: (f32, f32) = (0.5, 1.5);
-const SPAMMER_DELAY: (f32, f32) = (0.5, 1.5);
-const SPAWNER_DELAY: (f32, f32) = (3.5, 30.5);
 
+// Shot delays
+const LINEAR_DELAY: (f32, f32) = (0.5, 5.5);
+const SPAMMER_DELAY: (f32, f32) = (0.5, 1.5);
+const SPAWNER_DELAY: (f32, f32) = (5.5, 30.5);
+
+// GUN + BULLET BLUEPRINTS   
+const GUN_BLUEPRINT_LINEAR: gun::GunBluePrint = gun::GunBluePrint(1.25, 20, 1);
+const GUN_BLUEPRINT_WAVY: gun::GunBluePrint = gun::GunBluePrint(1.5, 100, 2);
+const GUN_BLUEPRINT_SPAMMER: gun::GunBluePrint = gun::GunBluePrint(0.75, 10, 4);
+
+const BULLET_STRAIGHT: gun::BulletBlueprint = gun::BulletBlueprint(-1, |_| 5., |_| 0., 0., false, 20);
+const BULLET_COS_POS: gun::BulletBlueprint = gun::BulletBlueprint(-1, |_| 2., |_| 0., 0., false, 20);
+const BULLET_COS_NEG: gun::BulletBlueprint = gun::BulletBlueprint(-1, |_| 2., |_| 0., 0., false, 20);
+const BULLET_DAIG_POS_0: gun::BulletBlueprint = gun::BulletBlueprint(-1, |_| 8., |_| 4., 0., false, 20);
+const BULLET_DAIG_POS_1: gun::BulletBlueprint = gun::BulletBlueprint(-1, |_| 4., |_| 8., 0., false, 20);
+const BULLET_DAIG_NEG_0: gun::BulletBlueprint = gun::BulletBlueprint(-1, |_| 8., |_| -4., 0., false, 20);
+const BULLET_DAIG_NEG_1: gun::BulletBlueprint = gun::BulletBlueprint(-1, |_| 4., |_| -8., 0., false, 20);
 
 const DEFAULT_FALL_SPEED: f32 = 20.;
 
@@ -67,7 +80,8 @@ pub struct Enemy {
     last_shot: f32,
     x_path: fn(f32) -> f32,
     y_path: fn(f32) -> f32,
-    shot_range: (f32, f32)
+    shot_range: (f32, f32),
+    pub gun: gun::Gun
 }
 
 impl Enemy{
@@ -82,12 +96,12 @@ pub struct EnemyBundle {
     sprite_bundle: SpriteBundle,
     pub enemy: Enemy,
     collider: Collider,
-    health: player::Health
+    health: health::Health
 }
 
 /// Create a new enemey providing a spawn location, type and asset to render
 impl EnemyBundle {
-    pub fn new(spawn_x: f32, spawn_y: f32, t: EnemyType, asset: Handle<Image>, health: player::Health, path: EnemyPath, shot_range: (f32,f32)) -> EnemyBundle{
+    pub fn new(spawn_x: f32, spawn_y: f32, t: EnemyType, asset: Handle<Image>, health: health::Health, path: EnemyPath, shot_range: (f32,f32), gun: gun::Gun) -> EnemyBundle{
         EnemyBundle {
             sprite_bundle: SpriteBundle {
                 texture: asset,
@@ -104,7 +118,9 @@ impl EnemyBundle {
                 last_shot: 0.,
                 x_path: path.0,
                 y_path: path.1,
-                shot_range: shot_range
+                shot_range: shot_range,
+                gun: gun
+
             },
             collider: Collider,
             health: health
@@ -126,6 +142,7 @@ pub fn enemy_control(
     mut asset_server: Res<AssetServer>
 
 ) {
+    
     for(_, mut transform, mut enemy) in &mut sprite_position{
         enemy.tick += time.delta_seconds();
         // Implement bounding
@@ -148,50 +165,7 @@ pub fn enemy_control(
             enemy.last_shot = 0. - random_shot_delay as f32;
             let spawn_x = transform.translation.x;
             let spawn_y = transform.translation.y - 30.;
-            match  enemy.t {
-                EnemyType::Melee => {},
-                EnemyType::Linear => { // |args| expr == fn(args) {expr}
-                    commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new(-1, |_| 20., |_| 0., 0., false, 20), asset_server.load("plasma_red.png")));
-                    commands.spawn(AudioBundle {
-                        source: asset_server.load("sounds/laser.wav"),
-                        // auto-despawn the entity when playback finishes
-                        settings: PlaybackSettings {
-                            mode: bevy::audio::PlaybackMode::Despawn,
-                            volume: Volume::new(PLAYBACK_VOL),
-                            speed: PLAYBACK_SPEED,
-                            ..default()
-                        },
-                    });
-                },
-                EnemyType::Wavy => {
-                    commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new(-1, |_| 4.,  |a| 10.*a.cos(), 0.,  false, 60), asset_server.load("plasma_purple.png")));
-                    commands.spawn(AudioBundle {
-                        source: asset_server.load("sounds/laser.wav"),
-                        // auto-despawn the entity when playback finishes
-                        settings: PlaybackSettings {
-                            mode: bevy::audio::PlaybackMode::Despawn,
-                            volume: Volume::new(PLAYBACK_VOL),
-                            speed: PLAYBACK_SPEED,
-                            ..default()
-                        },
-                    });
-                },
-                EnemyType::Spammer => {
-                    commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new( -1, |a| 20.*a,  |_| 5., 0., false, 20), asset_server.load("plasma_red.png")));
-                    commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new( -1, |a| 20.*a,  |_| -5., 0., false, 20), asset_server.load("plasma_red.png")));
-                    commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new( -1, |_| 4.,  |a| 10.*a.cos(), 0., false, 20), asset_server.load("plasma_red.png")));
-                    commands.spawn(AudioBundle {
-                        source: asset_server.load("sounds/laser_0.wav"),
-                        // auto-despawn the entity when playback finishes
-                        settings: PlaybackSettings {
-                            mode: bevy::audio::PlaybackMode::Despawn,
-                            volume: Volume::new(PLAYBACK_VOL),
-                            speed: PLAYBACK_SPEED,
-                            ..default()
-                        },
-                    });
-                
-                },
+            match enemy.t {
                 EnemyType::Spawner => {
                     
                     let rng_size: u32 = rand::thread_rng().gen_range(2..20);
@@ -207,9 +181,27 @@ pub fn enemy_control(
                             ..default()
                         },
                     });
+                },
+                EnemyType::Melee => {},
+                _ => {
+                    commands.spawn(AudioBundle {
+                        source: asset_server.load("sounds/laser.wav"),
+                        // auto-despawn the entity when playback finishes
+                        settings: PlaybackSettings {
+                            mode: bevy::audio::PlaybackMode::Despawn,
+                            volume: Volume::new(PLAYBACK_VOL),
+                            speed: PLAYBACK_SPEED,
+                            ..default()
+                        },
+                    });
+
+                    let bullets = enemy.gun.get_bullets();
+                    for bul in bullets {
+                        commands.spawn(bullet::BulletBundle::new(spawn_x, spawn_y, bullet::Bullet::new(bul.0, bul.1, bul.2, bul.3, bul.4, bul.5),asset_server.load("plasma_red.png") ));
+                    }
                 }
-    
             }
+
         }
         
     }
@@ -225,10 +217,26 @@ fn spawn_wave_box(wave_size: u32, asset_server: &mut Res<AssetServer>, commands:
 
         let rng = rand::thread_rng().gen_range(0..=100);
         match rng {
-            0..=25 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("enemies/melee.png"), player::Health::new(20,150, 1.5), MELEE_PATH, LINEAR_DELAY));},
-            26..=50 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Linear, asset_server.load("enemies/basic.png"), player::Health::new(0,150, 0.0), LINEAR_PATH, LINEAR_DELAY));},
-            51..=75 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Wavy, asset_server.load("enemies/wavy.png"), player::Health::new(150,150, 3.0), WAVY_PATH, LINEAR_DELAY));},
-            76..=100 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spammer, asset_server.load("enemies/spammer.png"), player::Health::new(100,150, 3.0), SPAMMER_PATH, SPAMMER_DELAY));},
+            0..=25 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("enemies/melee.png"), health::Health::new(20,150, 3.5), MELEE_PATH, LINEAR_DELAY, gun::Gun::new(Vec::new(), 0., 0, 1)));},
+            26..=50 => {
+                let mut starting_bullets = Vec::new();
+                starting_bullets.push(BULLET_STRAIGHT);
+                commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Linear, asset_server.load("enemies/basic.png"), health::Health::new(0,150, 0.0), LINEAR_PATH, LINEAR_DELAY, gun::Gun::new_from_blueprint(starting_bullets, GUN_BLUEPRINT_LINEAR)));
+            },
+            51..=75 => {
+                let mut starting_bullets = Vec::new();
+                starting_bullets.push(BULLET_COS_POS);
+                starting_bullets.push(BULLET_COS_NEG);
+                commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Wavy, asset_server.load("enemies/wavy.png"), health::Health::new(150,150, 3.0), WAVY_PATH, LINEAR_DELAY, gun::Gun::new_from_blueprint(starting_bullets, GUN_BLUEPRINT_WAVY)));
+            },
+            76..=100 => {
+                let mut starting_bullets = Vec::new();
+                starting_bullets.push(BULLET_DAIG_NEG_0);
+                starting_bullets.push(BULLET_DAIG_NEG_1);
+                starting_bullets.push(BULLET_DAIG_POS_0);
+                starting_bullets.push(BULLET_DAIG_POS_1);
+                commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spammer, asset_server.load("enemies/spammer.png"), health::Health::new(100,150, 3.0), SPAMMER_PATH, SPAMMER_DELAY, gun::Gun::new_from_blueprint(starting_bullets, GUN_BLUEPRINT_SPAMMER)));
+            },
             _ => ()
         }
 
@@ -241,7 +249,7 @@ fn spawn_wave_box(wave_size: u32, asset_server: &mut Res<AssetServer>, commands:
         let r_x = rand::thread_rng().gen_range( (0. - L_BOUND as f32)..(R_BOUND as f32));
         let r_y = rand::thread_rng().gen_range( (T_BOUND as f32)..(T_BOUND as f32 + 200.));
 
-        commands.spawn(EnemyBundle::new(r_x, r_y, EnemyType::Spawner, asset_server.load("enemies/spawner.png"), player::Health::new(200,250, 3.0), SPAWNER_PATH, SPAWNER_DELAY));
+        commands.spawn(EnemyBundle::new(r_x, r_y, EnemyType::Spawner, asset_server.load("enemies/spawner.png"), health::Health::new(200,250, 3.0), SPAWNER_PATH, SPAWNER_DELAY, gun::Gun::new(Vec::new(), 0., 0, 1)));
     }
 
 }

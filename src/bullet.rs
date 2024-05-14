@@ -1,7 +1,7 @@
 use bevy::{audio::Volume, math::bounding::{Aabb2d, IntersectsVolume}, prelude::*};
 use rand::Rng;
 
-use crate::{enemy, game::ScoreBoard, player, PLAYBACK_SPEED, PLAYBACK_VOL};
+use crate::{enemy, game::ScoreBoard, gun, health, player, PLAYBACK_SPEED, PLAYBACK_VOL};
 use super::{T_BOUND, B_BOUND};
 
 const BULLET_DEATH: f32 = 5.;
@@ -147,12 +147,12 @@ pub fn play_collision_sound(
 
 /// Event for processing damage
 pub fn apply_collision_damage(
-    mut health_query: Query<&mut player::Health>,
+    mut health_query: Query<&mut health::Health>,
     mut collision_events: EventReader<CollisionEvent>,
     mut commands: Commands,
     mut score_events: EventWriter<ScoreEvent>,
     enemy_query: Query<&enemy::Enemy, With<enemy::Collider>>,
-    mut gun_query: Query<&mut player::Gun, With<player::PlayerControlled>>
+    mut gun_query: Query<&mut gun::Gun, With<player::PlayerControlled>>
 ){
     if !collision_events.is_empty() {
         // This prevents events staying active on the next frame.
@@ -163,8 +163,6 @@ pub fn apply_collision_damage(
 
                 if !health.is_alive() { // Entity has died from damage
                     //check if we should add score
-                    println!("Should add Score? {}", !dmg.2);
-                    println!("Found {} enemies in query ", enemy_query.iter().len());
                     if !dmg.2 { // not a player dying 
                         if let Ok(en) = enemy_query.get(dmg.0) {
                             let (score, mul) = en.get_type().get_score();
@@ -179,11 +177,11 @@ pub fn apply_collision_damage(
                                        
                                         let b_choice = rand::thread_rng().gen_range(0..4);
                                         match b_choice {
-                                            0 => gun.add_bullet(player::BulletBlueprint(1, |y| y*y, |_| 0., 0., true, 50)),
-                                            1 => gun.add_bullet(player::BulletBlueprint(1, |y| y*y, |x| x.cos(), 0., true, 50)),
-                                            2 => gun.add_bullet(player::BulletBlueprint(1, |y| 2., |x| 10.*x.cos(), 0., true, 50)),
-                                            3 => gun.add_bullet(player::BulletBlueprint(1, |y| 10., |x| x*x, 0., true, 50)),
-                                            _ => gun.add_bullet(player::BulletBlueprint(1, |y| y*y, |x| x*x, 0., true, 50))
+                                            0 => gun.add_bullet(gun::BulletBlueprint(1, |y| y*y, |_| 0., 0., true, 50)),
+                                            1 => gun.add_bullet(gun::BulletBlueprint(1, |y| y*y, |x| x.cos(), 0., true, 50)),
+                                            2 => gun.add_bullet(gun::BulletBlueprint(1, |_| 2., |x| 10.*x.cos(), 0., true, 50)),
+                                            3 => gun.add_bullet(gun::BulletBlueprint(1, |_| 10., |x| x*x, 0., true, 50)),
+                                            _ => gun.add_bullet(gun::BulletBlueprint(1, |y| y*y, |x| x*x, 0., true, 50))
                                         }
                                         
                                     }

@@ -1,4 +1,4 @@
-use bevy::{audio::Volume, diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}, prelude::*, window::{PresentMode, WindowTheme}};
+use bevy::{diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}, prelude::*, window::{PresentMode, WindowTheme}};
 
 pub const T_BOUND: u16 = 400;
 pub const B_BOUND: f32 = -500.;
@@ -11,6 +11,8 @@ mod player;
 mod game;
 mod menu;
 mod music;
+mod health;
+mod gun;
 
 #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
 enum GameState {
