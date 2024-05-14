@@ -1,6 +1,7 @@
 use bevy::{audio::Volume, math::bounding::{Aabb2d, IntersectsVolume}, prelude::*};
+use rand::Rng;
 
-use crate::{enemy, game::ScoreBoard, player, PLAYBACK_SPEED, PLAYBACK_VOL};
+use crate::{enemy, game::ScoreBoard, gun, health, player, PLAYBACK_SPEED, PLAYBACK_VOL};
 use super::{T_BOUND, B_BOUND};
 
 const BULLET_DEATH: f32 = 5.;
@@ -54,6 +55,7 @@ impl BulletBundle{
             bullet: bullet
         }
     }
+
 }
 
 
@@ -143,14 +145,15 @@ pub fn play_collision_sound(
         });
     }
 }
-
+//Its really not good im doing all this inside this function lmao
 /// Event for processing damage
 pub fn apply_collision_damage(
-    mut health_query: Query<&mut player::Health>,
+    mut health_query: Query<&mut health::Health>,
     mut collision_events: EventReader<CollisionEvent>,
     mut commands: Commands,
     mut score_events: EventWriter<ScoreEvent>,
     enemy_query: Query<&enemy::Enemy, With<enemy::Collider>>,
+    mut gun_query: Query<&mut gun::Gun, With<player::PlayerControlled>>
 ){
     if !collision_events.is_empty() {
         // This prevents events staying active on the next frame.
@@ -161,12 +164,38 @@ pub fn apply_collision_damage(
 
                 if !health.is_alive() { // Entity has died from damage
                     //check if we should add score
-                    println!("Should add Score? {}", !dmg.2);
-                    println!("Found {} enemies in query ", enemy_query.iter().len());
                     if !dmg.2 { // not a player dying 
                         if let Ok(en) = enemy_query.get(dmg.0) {
                             let (score, mul) = en.get_type().get_score();
-                            score_events.send(ScoreEvent(score, mul));    
+                            score_events.send(ScoreEvent(score, mul));
+
+                            if let Ok(mut gun) = gun_query.get_single_mut() {
+                                let gun_damage = gun.get_bullet_damage(); // get gun damage and speed 
+                                let gun_speed: f32 = gun.get_bullet_delay();
+
+                                match en.get_type() { // match type for reward / consequence 
+                                    enemy::EnemyType::Spawner => {
+                                       
+                                        let b_choice = rand::thread_rng().gen_range(0..5);
+                                        match b_choice {
+                                            0 => gun.add_bullet(gun::BulletBlueprint(1, |y| y*y, |_| 0., 0., true, 50)),
+                                            1 => gun.add_bullet(gun::BulletBlueprint(1, |y| y*y, |_| 5., 0., true, 50)),
+                                            2 => gun.add_bullet(gun::BulletBlueprint(1, |y| y*y, |_| -5., 0., true, 50)),
+                                            3 => gun.add_bullet(gun::BulletBlueprint(1, |_| 10., |_| 5., 0., true, 50)),
+                                            _ => gun.add_bullet(gun::BulletBlueprint(1, |_| 10., |_| -5., 0., true, 50))
+                                        }
+                                        
+                                    }
+                                    enemy::EnemyType::Wavy => {
+                                        gun.set_bullet_damage(gun_damage + 30)
+                                    },
+                                    enemy::EnemyType::Spammer => {
+                                        gun.set_bullet_delay(gun_speed - 0.0015)
+                                    },
+                                    enemy::EnemyType::Linear => {},
+                                    enemy::EnemyType::Melee => {}
+                                }    
+                            }
                         }
                         
                     }    
