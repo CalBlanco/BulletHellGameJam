@@ -130,8 +130,8 @@ pub struct PlayerBundle {
 impl PlayerBundle {
     fn new(asset: Handle<Image>) -> PlayerBundle {
         let mut starting_bullets = Vec::new();
-        starting_bullets.push(gun::BulletBlueprint(1,|_| 5., |x| 5.*(x*10.).cos(), 0., true, 50));
-        starting_bullets.push(gun::BulletBlueprint(1,|_| 5., |x| -5.*((1./x)*10.).cos(), 0., true, 50));
+        starting_bullets.push(gun::BulletBlueprint(1,|_| 5., |x| 9.*(x*10.).cos(), 0., true, 50));
+        starting_bullets.push(gun::BulletBlueprint(1,|_| 5., |x| -9.*(x*10.).cos(), 0., true, 50));
         starting_bullets.push(gun::BulletBlueprint(1,|_| 20., |_: f32| 0., 0., true, 50));
        
         PlayerBundle {

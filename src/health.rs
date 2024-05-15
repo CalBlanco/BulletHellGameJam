@@ -51,7 +51,7 @@ impl Health {
     pub fn get_health(&self) -> i64 {self.health}
     pub fn get_shield(&self) -> i64 {self.shield}
 
-    pub fn regen_shield(&mut self, inc: i64){self.shield = self.shield + inc;}
+    pub fn recharge_shield(&mut self){self.shield = self.shield + self.shield_recharge;}
 
     pub fn shield_tick(&mut self, dur: Duration) {
         self.timer.0.tick(dur);
@@ -74,7 +74,7 @@ pub fn shield_tick(
         health.shield_tick(time.delta()); // increment timer
 
         if health.can_shield_recharge() {
-            health.regen_shield(3);
+            health.recharge_shield();
         }
 
     }
