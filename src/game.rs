@@ -47,6 +47,7 @@ impl Plugin for BulletHellElite {
                 bullet::bullet_movement, 
                 bullet::apply_collision_damage, 
                 bullet::update_score, 
+                bullet::bullet_on_bullet_collision,
                 enemy::enemy_control, 
                 player::update_player_health, 
                 player::update_player_shield, 

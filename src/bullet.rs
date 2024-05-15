@@ -268,3 +268,26 @@ pub fn update_score(
         }
     }
 }
+
+
+pub fn bullet_on_bullet_collision(
+    mut commands: Commands,
+    mut bullet_query: Query<(Entity, &mut Bullet, &mut Transform)>,
+)
+{   
+    for (en, bul, tran) in bullet_query.iter() {
+        for(en2, bul2, tran2) in bullet_query.iter(){
+            if en == en2 || bul.ply == bul2.ply {continue}; // same bullet or same team
+
+            let collision = bullet_collision(Aabb2d::new(tran.translation.truncate(), Vec2::new(8.,8.)), Aabb2d::new(tran2.translation.truncate(), Vec2::new(8.,8.)));
+
+            if let Some(_) = collision { // collision between enemy and player bullet
+                commands.entity(en2).despawn(); // despawn the bullet 
+                commands.entity(en).despawn(); // despawn the bullet 
+                break; // exit this loop so we iterate out of the outer after removing its bullet
+            }
+            continue;
+
+        }
+    }
+}
