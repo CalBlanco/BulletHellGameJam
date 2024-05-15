@@ -45,7 +45,6 @@ impl Plugin for BulletHellElite {
             .add_systems(FixedUpdate, (
                 player::sprite_movement, 
                 bullet::bullet_movement, 
-                bullet::play_collision_sound, 
                 bullet::apply_collision_damage, 
                 bullet::update_score, 
                 enemy::enemy_control, 

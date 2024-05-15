@@ -14,7 +14,7 @@ const SPAWN_X: f32 = 0.;
 const SPAWN_Y: f32 = B_BOUND + 100.;
 
 const MOVE_SPEED: f32 = 180.;
-const SHOT_DELAY: f32 = 0.05;
+const SHOT_DELAY: f32 = 0.08;
 
 
 const SHIELD_SIZE: i64 = 500;
@@ -54,9 +54,9 @@ pub fn sprite_movement(
 
         // Bound X
         if transform.translation.x > R_BOUND as f32 {
-            transform.translation.x  = (R_BOUND - 1) as f32;
+            transform.translation.x  = 1. - L_BOUND as f32 ;
         } else if transform.translation.x < -(L_BOUND as f32) {
-            transform.translation.x = 1. - L_BOUND as f32 ;
+            transform.translation.x = (R_BOUND - 1) as f32;
         }
         // Bound Y 
         if transform.translation.y > PLAYER_T_BOUND as f32 {
@@ -70,11 +70,11 @@ pub fn sprite_movement(
         let speed_mult = if keycode.pressed(KeyCode::ShiftLeft){ 3. } else { 1.}; // Speed boost
         let move_dist = MOVE_SPEED * time.delta_seconds() * speed_mult;
         //Move Left
-        if keycode.pressed(KeyCode::KeyA) || keycode.pressed(KeyCode::ArrowLeft) {
+        if keycode.pressed(KeyCode::KeyA) {
             transform.translation.x -= move_dist; // if transform.translation.x - move_dist < -500. {0.} else {move_dist}
         }
         // Move Right
-        if keycode.pressed(KeyCode::KeyD) || keycode.pressed(KeyCode::ArrowRight) {
+        if keycode.pressed(KeyCode::KeyD)  {
             transform.translation.x +=  move_dist;//if transform.translation.x + move_dist > R_BOUND as f32 {0.} else {move_dist}
         }
     
@@ -92,12 +92,7 @@ pub fn sprite_movement(
             commands.spawn(AudioBundle {
                 source: asset_server.load("sounds/laser.wav"),
                 // auto-despawn the entity when playback finishes
-                settings: PlaybackSettings {
-                    mode: bevy::audio::PlaybackMode::Despawn,
-                    volume: Volume::new(PLAYBACK_VOL),
-                    speed: PLAYBACK_SPEED,
-                    ..default()
-                },
+                settings: PlaybackSettings::DESPAWN
             });
 
             
@@ -105,7 +100,7 @@ pub fn sprite_movement(
             let bullets = gun.get_bullets();
 
             for bul in bullets {
-                commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new(bul.0, bul.1, bul.2, bul.3, bul.4, bul.5), asset_server.load("plasma_blue.png")));
+                commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new(bul.0, bul.1, bul.2, bul.3, bul.4, gun.get_bullet_damage()), asset_server.load("plasma_blue.png")));
             }
 
             /* commands.spawn(bullet::BulletBundle::new(transform.translation.x, transform.translation.y, bullet::Bullet::new( 1, |_| 3., |a: f32| 5.*(a).cos()  ,  0.,  true, bullet_damage), asset_server.load("plasma_blue.png")));
@@ -141,7 +136,7 @@ impl PlayerBundle {
                 ..default()
             },
             control: PlayerControlled,
-            health: health::Health::new(SHIELD_SIZE, HEALTH_SIZE, 2.0, 20),
+            health: health::Health::new(SHIELD_SIZE, HEALTH_SIZE, 3.75, 100),
             gun: gun::Gun::new(starting_bullets, SHOT_DELAY, BULLET_DAMAGE, 20),
         }
     } 

@@ -2,7 +2,7 @@ use bevy::{audio::Volume, math::bounding::{Aabb2d, BoundingCircle, IntersectsVol
 use bevy_hanabi::{EffectAsset, EffectProperties, EffectSpawner, ParticleEffect, ParticleEffectBundle, Spawner};
 use rand::Rng;
 
-use crate::{enemy, explosion, game::ScoreBoard, gun, health, player, PLAYBACK_SPEED, PLAYBACK_VOL};
+use crate::{enemy, explosion, game::ScoreBoard, gun, health, player::{self, PlayerControlled}, PLAYBACK_SPEED, PLAYBACK_VOL};
 use super::{T_BOUND, B_BOUND, L_BOUND, R_BOUND};
 
 const BULLET_DEATH: f32 = 5.;
@@ -77,10 +77,10 @@ pub fn bullet_movement(
             continue;
         }
 
-        if b_transform.translation.x < 0. - L_BOUND as f32 {
+        if b_transform.translation.x < 0. - L_BOUND as f32 && bullet.ply {
             b_transform.translation.x = R_BOUND as f32 - 1.;
         }
-        if b_transform.translation.x > R_BOUND as f32 {
+        if b_transform.translation.x > R_BOUND as f32 && bullet.ply {
             b_transform.translation.x = 0. - L_BOUND as f32 + 1.; 
         }
 
@@ -140,27 +140,7 @@ fn explosion_collision(circle: BoundingCircle, square: Aabb2d) -> Option<bool> {
     }
 }
 
-pub fn play_collision_sound(
-    mut commands: Commands,
-    mut collision_events: EventReader<CollisionEvent>,
-    asset_server: Res<AssetServer>
-) {
-    // Play a sound once per frame if a collision occurred.
-    if !collision_events.is_empty() {
-        // This prevents events staying active on the next frame.
-        collision_events.clear();
-        commands.spawn(AudioBundle {
-            source: asset_server.load("sounds/hit.wav"),
-            // auto-despawn the entity when playback finishes
-            settings: PlaybackSettings {
-                mode: bevy::audio::PlaybackMode::Despawn,
-                volume: Volume::new(PLAYBACK_VOL),
-                speed: PLAYBACK_SPEED,
-                ..default()
-            },
-        });
-    }
-}
+
 //Its really not good im doing all this inside this function lmao
 /// Event for processing damage
 pub fn apply_collision_damage(
@@ -175,6 +155,7 @@ pub fn apply_collision_damage(
         &mut EffectSpawner,
         &mut Transform,
     )>,
+    asset_server: Res<AssetServer>
 ){
     if !collision_events.is_empty() {
         // This prevents events staying active on the next frame.
@@ -190,7 +171,11 @@ pub fn apply_collision_damage(
 
                         if let Ok((_, en, transform)) = enemy_query.get(dmg.0) { // enemy killed 
 
-                            
+                            commands.spawn(AudioBundle {
+                                source: asset_server.load("sounds/hit.wav"),
+                                // auto-despawn the entity when playback finishes
+                                settings: PlaybackSettings::DESPAWN
+                            });
 
                             let (score, mul) = en.get_type().get_score();
                             score_events.send(ScoreEvent(score, mul));
@@ -216,7 +201,7 @@ pub fn apply_collision_damage(
                                         gun.set_bullet_damage(gun_damage + 30)
                                     },
                                     enemy::EnemyType::Spammer => {
-                                        gun.set_bullet_delay(gun_speed - 0.0015)
+                                        gun.set_bullet_delay(gun_speed - 0.0005)
                                     },
                                     enemy::EnemyType::Linear => {},
                                     enemy::EnemyType::Melee => {}
@@ -267,6 +252,7 @@ pub fn apply_collision_damage(
 pub fn update_score(
     mut score_events: EventReader<ScoreEvent>,
     mut scoreboard: ResMut<ScoreBoard>,
+    mut player_gun: Query<&mut gun::Gun, With<PlayerControlled>>
 ){
     if !score_events.is_empty() {
         for score in score_events.read() {
@@ -275,6 +261,9 @@ pub fn update_score(
 
             scoreboard.add_score(score.0);
             scoreboard.add_mul(score.1);
+
+            let Ok(mut pg) = player_gun.get_single_mut() else {return;};
+            pg.set_bullet_damage(35 * (scoreboard.get_mul() + 3) as i64);
         }
     }
 }
