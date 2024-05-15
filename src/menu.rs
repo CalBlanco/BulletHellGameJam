@@ -111,7 +111,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         })
         .with_children(|text_parent| {
             text_parent.spawn(TextBundle::from_section(
-                "WASD to Move\nSpace to shoot\nE for Special\n\nNo Objectives just Survive and Score!",
+                "WASD to Move\nSpace to shoot\nE for Special\nUp and Down Arrow for Music Volume\nNo Objectives just Survive and Score!",
                 TextStyle {
                     font: asset_server.load("fonts/EvilEmpire.otf"),
                     font_size: 40.0,
