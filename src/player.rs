@@ -17,8 +17,8 @@ const MOVE_SPEED: f32 = 180.;
 const SHOT_DELAY: f32 = 0.08;
 
 
-const SHIELD_SIZE: i64 = 32_500;
-const HEALTH_SIZE: i64 = 32_500;
+const SHIELD_SIZE: i64 = 500;
+const HEALTH_SIZE: i64 = 500;
 
 const BULLET_DAMAGE: i64 = 20;
 
@@ -86,11 +86,19 @@ pub fn sprite_movement(
         }
     
         if keycode.just_pressed(KeyCode::KeyE){
-            
-            let points = shapes::generate_line(transform.translation.x - 100., transform.translation.y - 100., transform.translation.x + 100., transform.translation.y + 100., 30);
-            for p in points {  
-                commands.spawn(bullet::BulletBundle::new(p.0, p.1, bullet::Bullet::new(1, |y| y*y, |x| 3.*(7.*x).cos(), 0., true, 20), asset_server.load("plasma_green.png")));
+            let px = transform.translation.x;
+            let py = transform.translation.y;
+            let points = shapes::generate_triangle((px+200., py),(px-200., py),(px, py + 200.), 30);
+
+            match points {
+                Ok(tri_points) => {
+                    for p in tri_points {  
+                        commands.spawn(bullet::BulletBundle::new(p.0, p.1, bullet::Bullet::new(1, |y| y - 1./(3.*y), |x| 0., 0., true, 20), asset_server.load("plasma_green.png")));
+                    }
+                },
+                Err(err) => println!("Error: {}", err)
             }
+            
         }
 
        
@@ -159,9 +167,9 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>){
     );
 
 
-    commands.spawn(EzTextBundle::new(String::from("Health: "), 60., 820., 20., asset_server.load("fonts/Lakmus.ttf"), Color::TEAL,HealthText));
-    commands.spawn(EzTextBundle::new(String::from("Shield: "), 60., 880., 20., asset_server.load("fonts/Lakmus.ttf"), Color::TEAL,ShieldText));
-    commands.spawn(EzTextBundle::new(String::from("Score: "), 80., 760., 20., asset_server.load("fonts/Lakmus.ttf"), Color::GOLD,ScoreText));
+    commands.spawn(EzTextBundle::new(String::from("Health: "), 60., 820., 20., asset_server.load("fonts/EvilEmpire.otf"), Color::TEAL,HealthText));
+    commands.spawn(EzTextBundle::new(String::from("Shield: "), 60., 880., 20., asset_server.load("fonts/EvilEmpire.otf"), Color::TEAL,ShieldText));
+    commands.spawn(EzTextBundle::new(String::from("Score: "), 80., 760., 20., asset_server.load("fonts/EvilEmpire.otf"), Color::GOLD,ScoreText));
 
 }
 

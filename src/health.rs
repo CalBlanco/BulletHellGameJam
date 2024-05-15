@@ -24,7 +24,7 @@ impl Health {
             shield: shield_size,
             health: health_size,
             is_alive: true,
-            timer: ShieldTimer(Timer::new(Duration::from_secs_f32(shield_time), TimerMode::Repeating)),
+            timer: ShieldTimer(Timer::new(Duration::from_secs_f32(shield_time), TimerMode::Once)),
             shield_recharge: shield_recharge,
             //max_health: health_size,
             max_shield: shield_size

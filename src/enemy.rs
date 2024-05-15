@@ -1,9 +1,9 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI, time::Duration};
 
 use bevy::prelude::*;
 use rand::Rng;
 
-use crate::{bullet::{self}, gun, health, B_BOUND};
+use crate::{bullet, game::{self, GameTimer}, gun, health, shapes::generate_circle, B_BOUND};
 
 use super::T_BOUND;
 
@@ -13,8 +13,8 @@ const R_BOUND: u16 = 500;
 
 
 // Paths
-const MELEE_PATH: EnemyPath = EnemyPath(|_| 0., |_| 1.5 );
-const LINEAR_PATH: EnemyPath = EnemyPath(|_| 2. , |_| 2. );
+const MELEE_PATH: EnemyPath = EnemyPath(|_| 0., |y| y*y / 30. );
+const LINEAR_PATH: EnemyPath = EnemyPath(|_| 2. , |_| 0.5 );
 const SPAMMER_PATH: EnemyPath = EnemyPath(|_| 0.75, |y| y.cos() + 0.2 );
 const WAVY_PATH: EnemyPath = EnemyPath(|_| 0.5, |y| y.cos() + 0.1 );
 const SPAWNER_PATH: EnemyPath = EnemyPath(|_| 0.1, |y| (3.0*y).cos() );
@@ -22,7 +22,7 @@ const SPAWNER_PATH: EnemyPath = EnemyPath(|_| 0.1, |y| (3.0*y).cos() );
 // Shot delays
 const LINEAR_DELAY: (f32, f32) = (0.5, 5.5);
 const SPAMMER_DELAY: (f32, f32) = (0.5, 1.5);
-const SPAWNER_DELAY: (f32, f32) = (5.5, 30.5);
+const SPAWNER_DELAY: (f32, f32) = (3.5, 6.5);
 
 // GUN + BULLET BLUEPRINTS   
 const GUN_BLUEPRINT_LINEAR: gun::GunBluePrint = gun::GunBluePrint(1.25, 20, 1);
@@ -39,6 +39,10 @@ const BULLET_DAIG_NEG_1: gun::BulletBlueprint = gun::BulletBlueprint(-1, |_| 4.,
 
 const DEFAULT_FALL_SPEED: f32 = 20.;
 
+// Wave constants
+const WAVE_SIZE: u32 = 15; // multiplied by time elapsed (in minutes)
+const WAVE_INTERVAL: f32 = 10.;  // divided by time elapsed (in minutes)
+
 
 
 #[derive(Component)]
@@ -48,6 +52,8 @@ pub struct Collider;
 pub struct CollisionEvent;
 
 
+#[derive(Resource)]
+pub struct WaveTimer(pub Timer);
 
 #[derive(Component, Copy, Clone)]
 /// Enemy type enum to determine movement / combat patterns
@@ -132,7 +138,7 @@ impl EnemyBundle {
     
 }
 
-
+const TICK_MAX: f32 = 60. * 3.; // reset tick after 3 min  
 
 /// Control enemy movement and behavior 
 pub fn enemy_control(
@@ -151,6 +157,7 @@ pub fn enemy_control(
         if transform.translation.x > R_BOUND as f32 { transform.translation.x = 0. - L_BOUND as f32 + 1.; continue; } 
         if transform.translation.y < B_BOUND { 
             transform.translation.y = T_BOUND as f32 + 50.;
+            enemy.tick = if enemy.tick > TICK_MAX { 0. } else {enemy.tick};
             spawn_wave_box(2, &mut asset_server, &mut commands); // Consequence of letting an enemy get to the bottom
         }
 
@@ -167,15 +174,17 @@ pub fn enemy_control(
             let spawn_y = transform.translation.y - 30.;
             match enemy.t {
                 EnemyType::Spawner => {
-                    
-                    let rng_size: u32 = rand::thread_rng().gen_range(2..20);
-                    spawn_wave_box(rng_size, &mut asset_server, &mut commands);
-                    enemy.last_shot -= 200.; // Set the spawn timer to have a larger delay than the shoot timer
+                    let rng_size: u32 = rand::thread_rng().gen_range(15..40);
+                    let rng_rad: f32 = rand::thread_rng().gen_range(70. .. 180.);
+                    let points = generate_circle(transform.translation.x, transform.translation.y, rng_rad, rng_size as usize);
                     commands.spawn(AudioBundle {
                         source: asset_server.load("sounds/shieldhit.wav"),
                         // auto-despawn the entity when playback finishes
                         settings: PlaybackSettings::DESPAWN,
                     });
+                    for p in points {
+                        commands.spawn(bullet::BulletBundle::new(p.0, p.1, bullet::Bullet::new(-1, |y| y*y, |_| 0., 0., false, 50),asset_server.load("plasma_purple.png") ));
+                    }
                 },
                 EnemyType::Melee => {},
                 _ => {
@@ -199,6 +208,12 @@ pub fn enemy_control(
 
 
 fn spawn_wave_box(wave_size: u32, asset_server: &mut Res<AssetServer>, commands: &mut Commands) {
+    commands.spawn(AudioBundle {
+        source: asset_server.load("sounds/warp.wav"),
+        // auto-despawn the entity when playback finishes
+        settings: PlaybackSettings::DESPAWN,
+    });
+
     for _ in 1..wave_size { // spawns offset by 1
         
         
@@ -207,19 +222,19 @@ fn spawn_wave_box(wave_size: u32, asset_server: &mut Res<AssetServer>, commands:
 
         let rng = rand::thread_rng().gen_range(0..=100);
         match rng {
-            0..=25 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("enemies/melee.png"), health::Health::new(20,150, 3.5,5), MELEE_PATH, LINEAR_DELAY, gun::Gun::new(Vec::new(), 0., 0, 1)));},
-            26..=50 => {
+            0..=20 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("enemies/melee.png"), health::Health::new(20,150, 3.5,5), MELEE_PATH, LINEAR_DELAY, gun::Gun::new(Vec::new(), 0., 0, 1)));},
+            21..=40 => {
                 let mut starting_bullets = Vec::new();
                 starting_bullets.push(BULLET_STRAIGHT);
                 commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Linear, asset_server.load("enemies/basic.png"), health::Health::new(0,150, 0.0, 5), LINEAR_PATH, LINEAR_DELAY, gun::Gun::new_from_blueprint(starting_bullets, GUN_BLUEPRINT_LINEAR)));
             },
-            51..=75 => {
+            41..=60 => {
                 let mut starting_bullets = Vec::new();
                 starting_bullets.push(BULLET_COS_POS);
                 starting_bullets.push(BULLET_COS_NEG);
                 commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Wavy, asset_server.load("enemies/wavy.png"), health::Health::new(150,150, 3.0, 5), WAVY_PATH, LINEAR_DELAY, gun::Gun::new_from_blueprint(starting_bullets, GUN_BLUEPRINT_WAVY)));
             },
-            76..=100 => {
+            61..=80 => {
                 let mut starting_bullets = Vec::new();
                 starting_bullets.push(BULLET_DAIG_NEG_0);
                 starting_bullets.push(BULLET_DAIG_NEG_1);
@@ -227,19 +242,15 @@ fn spawn_wave_box(wave_size: u32, asset_server: &mut Res<AssetServer>, commands:
                 starting_bullets.push(BULLET_DAIG_POS_1);
                 commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spammer, asset_server.load("enemies/spammer.png"), health::Health::new(100,150, 3.0, 5), SPAMMER_PATH, SPAMMER_DELAY, gun::Gun::new_from_blueprint(starting_bullets, GUN_BLUEPRINT_SPAMMER)));
             },
+            81..=100 => {
+                commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spawner, asset_server.load("enemies/spawner.png"), health::Health::new(200,250, 3.0, 5), SPAWNER_PATH, SPAWNER_DELAY, gun::Gun::new(Vec::new(), 0., 0, 1)));
+            },
             _ => ()
+
         }
 
         
         
-    }
-
-    let rng = rand::thread_rng().gen_range(2..4);
-    for _ in 1..rng {
-        let r_x = rand::thread_rng().gen_range( (0. - L_BOUND as f32)..(R_BOUND as f32));
-        let r_y = rand::thread_rng().gen_range( (T_BOUND as f32)..(T_BOUND as f32 + 200.));
-
-        commands.spawn(EnemyBundle::new(r_x, r_y, EnemyType::Spawner, asset_server.load("enemies/spawner.png"), health::Health::new(200,250, 3.0, 5), SPAWNER_PATH, SPAWNER_DELAY, gun::Gun::new(Vec::new(), 0., 0, 1)));
     }
 
 }
@@ -250,5 +261,32 @@ pub fn init_wave(
     mut commands: Commands,
     mut asset_server: Res<AssetServer>
 ){
-        spawn_wave_box(20, &mut asset_server, &mut commands)
+        spawn_wave_box(WAVE_SIZE, &mut asset_server, &mut commands);
+        commands.insert_resource(WaveTimer(Timer::new(Duration::from_secs_f32(WAVE_INTERVAL), TimerMode::Repeating)));
+}
+
+pub fn wave_manager(
+    mut commands: Commands,
+    mut timer: ResMut<WaveTimer>,
+    time: Res<Time>,
+    game_time: Res<GameTimer>,
+    mut asset_server: Res<AssetServer>
+)
+{
+    timer.0.tick(time.delta());
+
+    if timer.0.finished(){
+        
+        let minutes_elapsed = (game_time.0.elapsed_secs() / 60.) + 1.;
+        let dur = WAVE_INTERVAL as f32 / minutes_elapsed;
+        timer.0.set_duration(Duration::from_secs_f32(dur)); // update the wave timer to be smaller
+
+        let size = WAVE_SIZE * (minutes_elapsed + 1.) as u32; // wave size * minutes elapsed
+        spawn_wave_box(size, &mut asset_server, &mut commands);
+
+        println!("Spawned wave {}, next interval: {}, Real-Elapsed: {} ", size, dur, game_time.0.elapsed_secs());
+
+        timer.0.reset();
+    }
+
 }

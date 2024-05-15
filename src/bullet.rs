@@ -218,7 +218,7 @@ pub fn apply_collision_damage(
                                 return;
                             };
 
-                            let color = Color::lch(1., 1., rand::random::<f32>() * 360.);
+                            let color = Color::lch(1., 1., rand::random::<f32>() * 120.);
                             properties.set(
                                 "spawn_color",
                                 color.as_linear_rgba_u32().into(),
