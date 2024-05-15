@@ -17,6 +17,7 @@ mod music;
 mod health;
 mod gun;
 mod explosion;
+mod shapes;
 
 #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
 enum GameState {
