@@ -20,3 +20,6 @@ I had a great convo with a friend about this theme and we came to some great con
 - Fun space art style, with space ships, and plasma balls (make some startrek models lmao)
 - Provide choices to the player that lead to gameplay changes 
 
+### Music 
+
+All songs played are from this video https://www.youtube.com/watch?v=0u1jq-6-ELk

@@ -174,12 +174,7 @@ pub fn enemy_control(
                     commands.spawn(AudioBundle {
                         source: asset_server.load("sounds/shieldhit.wav"),
                         // auto-despawn the entity when playback finishes
-                        settings: PlaybackSettings {
-                            mode: bevy::audio::PlaybackMode::Despawn,
-                            volume: Volume::new(PLAYBACK_VOL),
-                            speed: PLAYBACK_SPEED,
-                            ..default()
-                        },
+                        settings: PlaybackSettings::DESPAWN,
                     });
                 },
                 EnemyType::Melee => {},
@@ -187,12 +182,7 @@ pub fn enemy_control(
                     commands.spawn(AudioBundle {
                         source: asset_server.load("sounds/laser.wav"),
                         // auto-despawn the entity when playback finishes
-                        settings: PlaybackSettings {
-                            mode: bevy::audio::PlaybackMode::Despawn,
-                            volume: Volume::new(PLAYBACK_VOL),
-                            speed: PLAYBACK_SPEED,
-                            ..default()
-                        },
+                        settings: PlaybackSettings::DESPAWN
                     });
 
                     let bullets = enemy.gun.get_bullets();

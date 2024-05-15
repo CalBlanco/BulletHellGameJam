@@ -56,6 +56,7 @@ fn main() {
         .init_state::<GameState>()
         .add_plugins(menu::menu_plugin)
         .add_plugins(game::BulletHellElite)
+        .add_plugins(music::make_plugin)
         .run();
 }
 

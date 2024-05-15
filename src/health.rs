@@ -12,7 +12,9 @@ pub struct Health {
     health: i64,
     is_alive: bool,
     pub timer: ShieldTimer,
-    shield_recharge: i64
+    shield_recharge: i64,
+    max_shield: i64,
+    max_health: i64,
 }
 
 impl Health {
@@ -23,7 +25,9 @@ impl Health {
             health: health_size,
             is_alive: true,
             timer: ShieldTimer(Timer::new(Duration::from_secs_f32(shield_time), TimerMode::Repeating)),
-            shield_recharge: shield_recharge
+            shield_recharge: shield_recharge,
+            max_health: health_size,
+            max_shield: shield_size
         }
     }
 
@@ -51,7 +55,9 @@ impl Health {
     pub fn get_health(&self) -> i64 {self.health}
     pub fn get_shield(&self) -> i64 {self.shield}
 
-    pub fn recharge_shield(&mut self){self.shield = self.shield + self.shield_recharge;}
+    pub fn recharge_shield(&mut self){
+        self.shield =  if self.shield + self.shield_recharge <= self.max_shield {self.shield + self.shield_recharge}  else {self.max_shield};
+    }
 
     pub fn shield_tick(&mut self, dur: Duration) {
         self.timer.0.tick(dur);
@@ -65,7 +71,7 @@ impl Health {
 }
 
 
-
+/// Check if the shield can recharge and then recharge it 
 pub fn shield_tick(
     time: Res<Time>,
     mut query: Query<&mut Health>
