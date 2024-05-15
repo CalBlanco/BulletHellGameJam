@@ -43,7 +43,8 @@ fn music_controls(
     }
     if keyboard_input.pressed(KeyCode::ArrowDown) {
         for sink in music_controller.iter() {
-            sink.set_volume(sink.volume()  - 0.1);
+            let vol = if sink.volume()  - 0.1 < 0. {0. } else {sink.volume()  - 0.1};
+            sink.set_volume(vol);
         }
     }
     
