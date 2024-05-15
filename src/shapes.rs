@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 
 #[allow(dead_code)]
 /// Generate points on a circle 
@@ -51,3 +53,33 @@ pub fn generate_line(x1: f32, y1: f32, x2: f32, y2: f32, num_bullets: usize) -> 
     }
     vec
 }
+
+/// Generate a triangle based on 3  points ()
+pub fn generate_triangle(p1: (f32,f32), p2: (f32,f32), p3: (f32, f32), num_bullets: usize) -> Result<Vec<(f32,f32)>, &'static str> {
+    let mut vec: Vec<(f32, f32)> = Vec::new();
+    
+    
+    let line_0 = generate_line(p1.0, p1.1, p2.0, p2.1, num_bullets);
+    let line_1 = generate_line(p1.0, p1.1, p3.0, p3.1, num_bullets);
+    let line_2 = generate_line(p3.0, p3.1, p2.0, p2.1, num_bullets);
+
+    vec.extend(line_0);
+    vec.extend(line_1);
+    vec.extend(line_2);
+
+    Ok(vec)
+}
+
+
+
+/* fn angle_between(p1: (f32, f32), p2: (f32, f32)) -> f32 {
+    let dx = p2.0 - p1.0;
+    let dy = p2.1 - p1.1;
+    let angle = (dy).atan2(dx);
+
+    let degrees = angle * 180. / PI;
+    let degrees = degrees % 360.;
+    let degrees = if degrees < 0. {degrees + 360.} else {degrees};
+
+    degrees
+} */

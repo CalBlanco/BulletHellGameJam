@@ -1,10 +1,13 @@
-use bevy::{core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping}, prelude::*};
+use bevy::{core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping}, prelude::*, time::Stopwatch};
 
 use crate::{bullet, enemy, explosion, health, player};
 use super::GameState;
 
 
 pub struct BulletHellElite;
+
+#[derive(Resource)]
+pub struct GameTimer(pub Stopwatch);
 
 #[derive(Resource)]
 pub struct ScoreBoard { score: u64, mul: u64 }
@@ -42,6 +45,7 @@ impl Plugin for BulletHellElite {
             .add_event::<bullet::ScoreEvent>()
             .insert_resource(ScoreBoard {score: 0, mul: 1})
             .add_systems(OnEnter(GameState::Game),(setup, player::spawn_player, enemy::init_wave, explosion::setup).before(player::sprite_movement))
+            .add_systems(FixedPreUpdate, advance_game_timer.run_if(in_state(GameState::Game)))
             .add_systems(FixedUpdate, (
                 player::sprite_movement, 
                 bullet::bullet_movement, 
@@ -49,6 +53,7 @@ impl Plugin for BulletHellElite {
                 bullet::update_score, 
                 bullet::bullet_on_bullet_collision,
                 enemy::enemy_control, 
+                enemy::wave_manager,
                 player::update_player_health, 
                 player::update_player_shield, 
                 player::update_player_score, 
@@ -89,6 +94,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             MovingBackground(1.0)
         ));
 
+    commands.insert_resource(GameTimer(Stopwatch::new()));
+
 
 }
 
@@ -114,5 +121,9 @@ pub fn move_background_image(
         transform.translation.y += SCROLL_SPEED * back.0;
         
     }
+}
+
+pub fn advance_game_timer(time: Res<Time>, mut game_timer: ResMut<GameTimer>){
+    game_timer.0.tick(time.delta());
 }
 
