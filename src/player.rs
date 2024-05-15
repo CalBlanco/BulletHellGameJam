@@ -2,7 +2,7 @@ use bevy::{audio::Volume, prelude::*};
 
 
 
-use crate::{bullet, game::{self}, gun, health, GameState, PLAYBACK_SPEED, PLAYBACK_VOL};
+use crate::{bullet, game, gun, health, shapes, GameState, PLAYBACK_SPEED, PLAYBACK_VOL};
 
 use super::{EzTextBundle, B_BOUND, L_BOUND, R_BOUND};
 
@@ -17,8 +17,8 @@ const MOVE_SPEED: f32 = 180.;
 const SHOT_DELAY: f32 = 0.08;
 
 
-const SHIELD_SIZE: i64 = 500;
-const HEALTH_SIZE: i64 = 500;
+const SHIELD_SIZE: i64 = 32_500;
+const HEALTH_SIZE: i64 = 32_500;
 
 const BULLET_DAMAGE: i64 = 20;
 
@@ -85,6 +85,14 @@ pub fn sprite_movement(
             transform.translation.y -= move_dist;
         }
     
+        if keycode.just_pressed(KeyCode::KeyE){
+            
+            let points = shapes::generate_line(transform.translation.x - 100., transform.translation.y - 100., transform.translation.x + 100., transform.translation.y + 100., 30);
+            for p in points {  
+                commands.spawn(bullet::BulletBundle::new(p.0, p.1, bullet::Bullet::new(1, |y| y*y, |x| 3.*(7.*x).cos(), 0., true, 20), asset_server.load("plasma_green.png")));
+            }
+        }
+
        
         // Shoot 
         if keycode.pressed(KeyCode::Space) && gun.can_shoot() {
