@@ -263,7 +263,8 @@ pub fn update_score(
             scoreboard.add_mul(score.1);
 
             let Ok(mut pg) = player_gun.get_single_mut() else {return;};
-            pg.set_bullet_damage(35 * (scoreboard.get_mul() + 3) as i64);
+            let mul = (scoreboard.get_mul() + 3) as i64;
+            pg.set_bullet_damage(35 * std::cmp::min(mul, 16));
         }
     }
 }
