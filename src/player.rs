@@ -1,8 +1,8 @@
-use bevy::{audio::Volume, prelude::*};
+use bevy::prelude::*;
 
 
 
-use crate::{bullet, game, gun, health, shapes, GameState, PLAYBACK_SPEED, PLAYBACK_VOL};
+use crate::{bullet, game, gun, health, shapes, GameState};
 
 use super::{EzTextBundle, B_BOUND, L_BOUND, R_BOUND};
 

@@ -1,9 +1,9 @@
 use std::f32::consts::PI;
 
-use bevy::{audio::Volume, prelude::*};
+use bevy::prelude::*;
 use rand::Rng;
 
-use crate::{bullet::{self, BulletBundle}, gun, health, B_BOUND, PLAYBACK_SPEED, PLAYBACK_VOL};
+use crate::{bullet::{self}, gun, health, B_BOUND};
 
 use super::T_BOUND;
 

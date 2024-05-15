@@ -1,10 +1,5 @@
-use std::f32::consts::TAU;
-
 use bevy_hanabi::prelude::*;
 use bevy::prelude::*;
-
-#[derive(Resource)]
-pub struct Explosion(pub Handle<EffectAsset>);
 
 /// Stolen setup from github examples https://github.com/rust-adventure/asteroids/blob/main/src/meteors.rs
 pub fn setup(mut commands: Commands, mut effects: ResMut<Assets<EffectAsset>>) {

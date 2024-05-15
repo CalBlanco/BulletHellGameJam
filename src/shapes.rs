@@ -1,6 +1,5 @@
-use bevy::prelude::*;
 
-
+#[allow(dead_code)]
 /// Generate points on a circle 
 pub fn generate_circle(center_x:f32, center_y:f32, radius: f32, num_bullets: usize) -> Vec<(f32,f32)>{
     let mut vec = Vec::new();
@@ -14,6 +13,7 @@ pub fn generate_circle(center_x:f32, center_y:f32, radius: f32, num_bullets: usi
     vec
 }
 
+#[allow(dead_code)]
 pub fn generate_square(center_x: f32, center_y: f32, side_length: f32, num_bullets_per_side: usize) -> Vec<(f32,f32)> {
     let mut vec = Vec::new();
     

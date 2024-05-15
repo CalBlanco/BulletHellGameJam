@@ -1,8 +1,8 @@
-use bevy::{audio::Volume, math::bounding::{Aabb2d, BoundingCircle, IntersectsVolume}, prelude::*};
-use bevy_hanabi::{EffectAsset, EffectProperties, EffectSpawner, ParticleEffect, ParticleEffectBundle, Spawner};
+use bevy::{math::bounding::{Aabb2d, BoundingCircle, IntersectsVolume}, prelude::*};
+use bevy_hanabi::{EffectProperties, EffectSpawner};
 use rand::Rng;
 
-use crate::{enemy, explosion, game::ScoreBoard, gun, health, player::{self, PlayerControlled}, PLAYBACK_SPEED, PLAYBACK_VOL};
+use crate::{enemy, game::ScoreBoard, gun, health, player::{self, PlayerControlled}};
 use super::{T_BOUND, B_BOUND, L_BOUND, R_BOUND};
 
 const BULLET_DEATH: f32 = 5.;
@@ -228,7 +228,7 @@ pub fn apply_collision_damage(
                             spawner.reset(); // spawn the effect 
 
 
-                            for (e, enemy, effected_transform) in enemy_query.iter() {
+                            for (e, _, effected_transform) in enemy_query.iter() {
                                 if let Some(_) = explosion_collision(BoundingCircle::new(transform.translation.truncate(), 32.), Aabb2d::new(effected_transform.translation.truncate(), effect_transform.scale.truncate()/2.)){
                                     let Ok(mut e_health) = health_query.get_mut(e) else {return;};
                                     e_health.damage(20);
@@ -273,7 +273,7 @@ pub fn update_score(
 
 pub fn bullet_on_bullet_collision(
     mut commands: Commands,
-    mut bullet_query: Query<(Entity, &mut Bullet, &mut Transform)>,
+    bullet_query: Query<(Entity, &mut Bullet, &mut Transform)>,
 )
 {   
     // 

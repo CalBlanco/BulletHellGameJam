@@ -1,7 +1,7 @@
 
 
 use bevy::prelude::*;
-use super::GameState;
+
 
 #[derive(Component)]
 struct Music;

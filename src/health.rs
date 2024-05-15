@@ -14,7 +14,7 @@ pub struct Health {
     pub timer: ShieldTimer,
     shield_recharge: i64,
     max_shield: i64,
-    max_health: i64,
+    //max_health: i64,
 }
 
 impl Health {
@@ -26,7 +26,7 @@ impl Health {
             is_alive: true,
             timer: ShieldTimer(Timer::new(Duration::from_secs_f32(shield_time), TimerMode::Repeating)),
             shield_recharge: shield_recharge,
-            max_health: health_size,
+            //max_health: health_size,
             max_shield: shield_size
         }
     }
