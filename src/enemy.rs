@@ -3,7 +3,7 @@ use std::{f32::consts::PI, time::Duration};
 use bevy::prelude::*;
 use rand::Rng;
 
-use crate::{bullet, game::GameTimer, gun, health, shapes::generate_circle, B_BOUND};
+use crate::{bullet, game::GameTimer, gun, health, shapes::{self, generate_circle, generate_line, generate_square, generate_triangle}, B_BOUND};
 
 use super::T_BOUND;
 
@@ -17,7 +17,7 @@ const MELEE_PATH: EnemyPath = EnemyPath(|_| 0., |y| y*y / 30. );
 const LINEAR_PATH: EnemyPath = EnemyPath(|_| 2. , |_| 0.5 );
 const SPAMMER_PATH: EnemyPath = EnemyPath(|_| 0.75, |y| y.cos() + 0.2 );
 const WAVY_PATH: EnemyPath = EnemyPath(|_| 0.5, |y| 3.*y.cos() + 0.1 );
-const SPAWNER_PATH: EnemyPath = EnemyPath(|_| 0.1, |y| (3.0*y).cos() );
+const SPAWNER_PATH: EnemyPath = EnemyPath(|_| 0.1, |y| (3.0*y).cos() + (1./(10.*y)));
 
 // Shot delays
 const LINEAR_DELAY: (f32, f32) = (0.5, 5.5);
@@ -40,7 +40,7 @@ const BULLET_DAIG_NEG_1: gun::BulletBlueprint = gun::BulletBlueprint(-1, |_| 4.,
 const DEFAULT_FALL_SPEED: f32 = 20.;
 
 // Wave constants
-const WAVE_SIZE: u32 = 60; // multiplied by time elapsed (in minutes)
+const WAVE_SIZE: u32 = 15; // multiplied by time elapsed (in minutes)
 const WAVE_INTERVAL: f32 = 45.;  // divided by time elapsed (in minutes)
 
 
@@ -174,9 +174,29 @@ pub fn enemy_control(
             let spawn_y = transform.translation.y - 30.;
             match enemy.t {
                 EnemyType::Spawner => {
-                    let rng_size: u32 = rand::thread_rng().gen_range(15..40);
+                    let rng_size: u32 = rand::thread_rng().gen_range(35..70);
                     let rng_rad: f32 = rand::thread_rng().gen_range(70. .. 180.);
-                    let points = generate_circle(transform.translation.x, transform.translation.y, rng_rad, rng_size as usize);
+                    
+                    let roll = rand::thread_rng().gen_range(0..3);
+                    let x = transform.translation.x;
+                    let y = transform.translation.y;
+                    let points = match roll {
+                        0 => {
+                            generate_circle(x, y, rng_rad, rng_size as usize)
+                        },
+                        1 => {
+                            generate_square(x, y, rng_rad, rng_size as usize)
+                        },
+                        2 => {
+                            
+                            generate_triangle((x - rng_rad/2., y), (x + rng_rad/2., y), (x, y+rng_rad/2.), rng_size as usize)
+                        }
+                        _ => {
+                            generate_line(x - rng_rad/2., y - rng_rad/2., x + rng_rad/2., y + rng_rad/2., rng_size as usize)
+                        }
+                    };
+
+                    
                     commands.spawn(AudioBundle {
                         source: asset_server.load("sounds/shieldhit.wav"),
                         // auto-despawn the entity when playback finishes

@@ -33,17 +33,11 @@ pub struct PlayerControlled;
 
 
 #[derive(Component)]
-pub struct HealthText;
-#[derive(Component)]
-pub struct ShieldText;
-#[derive(Component)]
 pub struct ScoreText;
 
 #[derive(Component)]
 pub struct TimeText;
 
-#[derive(Component)]
-pub struct AmmoText;
 
 pub fn sprite_movement(
     time: Res<Time>, 
@@ -202,7 +196,7 @@ impl PlayerBundle {
             },
             control: PlayerControlled,
             health: health::Health::new(SHIELD_SIZE, HEALTH_SIZE, 3.75, 100),
-            gun: gun::Gun::new(starting_bullets, SHOT_DELAY, BULLET_DAMAGE, 10, 100, 3.0),
+            gun: gun::Gun::new(starting_bullets, SHOT_DELAY, BULLET_DAMAGE, 10, 50, 3.0),
             s_gun: s_gun
         }
     } 
@@ -217,28 +211,11 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>){
     );
 
 
-    commands.spawn(EzTextBundle::new(String::from("Health: "), 60., 820., 20., asset_server.load("fonts/EvilEmpire.otf"), Color::RED,HealthText));
-    commands.spawn(EzTextBundle::new(String::from("Shield: "), 60., 880., 20., asset_server.load("fonts/EvilEmpire.otf"), Color::TEAL,ShieldText));
     commands.spawn(EzTextBundle::new(String::from(""), 40., 40., 20., asset_server.load("fonts/EvilEmpire.otf"), Color::GOLD,ScoreText));
     commands.spawn(EzTextBundle::new(String::from("00:00"), 40., 40., 940., asset_server.load("fonts/EvilEmpire.otf"), Color::GOLD,TimeText));
-    commands.spawn(EzTextBundle::new(String::from("00000/00000"), 40., 780., 20., asset_server.load("fonts/EvilEmpire.otf"), Color::GOLD,AmmoText));
 }
 
-pub fn update_player_health(mut query: Query<&mut Text, With<HealthText>>, mut player: Query<&mut health::Health, With<PlayerControlled>>){
-    for mut text in &mut query {
-        if let Ok(health) = player.get_single_mut() {
-            text.sections[0].value = format!("Health: {:.2}", health.get_health());
-        }
-    }
-}
 
-pub fn update_player_shield(mut query: Query<&mut Text, With<ShieldText>>, mut player: Query<&mut health::Health, With<PlayerControlled>>){
-    for mut text in &mut query {
-        if let Ok(health) = player.get_single_mut() {
-            text.sections[0].value = format!("Shield: {:.2}", health.get_shield());
-        }
-    }
-}
 
 pub fn update_player_score(
     mut query: Query<&mut Text, With<ScoreText>>, 
@@ -262,15 +239,66 @@ pub fn update_time_display(
     }
 }
 
-pub fn update_ammo_display(
-    query: Query<&gun::Gun, With<PlayerControlled>>,
-    mut ammo: Query<&mut Text, With<AmmoText>>
-){
-    if let Ok(gun) = query.get_single() {
-        for mut text in &mut ammo {
-            text.sections[0].value = format!("{:05}/{:05}", gun.get_ammo(), gun.get_max_ammo());
-        }
-    }
-}
 
+
+const GIZMO_SIZE_X: f32= 100.;
+const GIZMO_SIZE_Y: f32= 20.;
+
+pub fn update_player_gizmos(
+    player_data: Query<(&mut health::Health, &mut gun::Gun, &mut shapes::ShapeGun, &Transform), With<PlayerControlled>>,
+    mut gizmos: Gizmos,
+){
+    if let Ok((health, gun, sgun, transform)) = player_data.get_single() {
+        let x = transform.translation.x;
+        let y = transform.translation.y;
+        let health_percent = health.get_health() as f32 / health.get_max_health() as f32;
+        let shield_percent = health.get_shield() as f32 / health.get_max_shield() as f32;
+
+        
+        
+        let y = y - 32.;
+        let v1 = Vec2::new(x - (GIZMO_SIZE_X * health_percent)/2., y );
+        let v2 = Vec2::new(x + (GIZMO_SIZE_X * health_percent)/2., y);
+
+        gizmos.line_gradient_2d(v1, v2, Color::RED, Color::GOLD);
+        gizmos.line_gradient_2d(v1 + Vec2::new(0.,2.), v2 + Vec2::new(0.,2.), Color::RED, Color::GOLD);
+        gizmos.line_gradient_2d(v1 + Vec2::new(0.,4.), v2 + Vec2::new(0.,4.), Color::RED, Color::GOLD);
+        gizmos.line_gradient_2d(v1 + Vec2::new(0.,6.), v2 + Vec2::new(0.,6.), Color::RED, Color::GOLD);
+        gizmos.line_gradient_2d(v1 + Vec2::new(0.,-2.), v2 + Vec2::new(0.,-2.), Color::RED, Color::GOLD);
+        gizmos.line_gradient_2d(v1 + Vec2::new(0.,-4.), v2 + Vec2::new(0.,-4.), Color::RED, Color::GOLD);
+        gizmos.line_gradient_2d(v1 + Vec2::new(0.,-6.), v2 + Vec2::new(0.,-6.), Color::RED, Color::GOLD);
+
+        let y = y -25.;
+        let v1 = Vec2::new(x - (GIZMO_SIZE_X * shield_percent)/2., y );
+        let v2 = Vec2::new(x + (GIZMO_SIZE_X * shield_percent)/2., y);
+        
+        // If gizmos wont let me fill a rectangle ill make one out of lines
+        gizmos.line_gradient_2d(v1, v2, Color::BLUE, Color::TEAL);
+        gizmos.line_gradient_2d(v1 + Vec2::new(0.,2.), v2 + Vec2::new(0.,2.), Color::BLUE, Color::TEAL);
+        gizmos.line_gradient_2d(v1 + Vec2::new(0.,4.), v2 + Vec2::new(0.,4.), Color::BLUE, Color::TEAL);
+        gizmos.line_gradient_2d(v1 + Vec2::new(0.,6.), v2 + Vec2::new(0.,6.), Color::BLUE, Color::TEAL);
+        gizmos.line_gradient_2d(v1 + Vec2::new(0.,-2.), v2 + Vec2::new(0.,-2.), Color::BLUE, Color::TEAL);
+        gizmos.line_gradient_2d(v1 + Vec2::new(0.,-4.), v2 + Vec2::new(0.,-4.), Color::BLUE, Color::TEAL);
+        gizmos.line_gradient_2d(v1 + Vec2::new(0.,-6.), v2 + Vec2::new(0.,-6.), Color::BLUE, Color::TEAL);
+
+
+        let ammo_percent = gun.get_ammo() as f32 / gun.get_max_ammo() as f32;
+        let shape_percent = sgun.get_shots() as f32 / sgun.get_max_shots() as f32;
+
+        let y = y -15.;
+        let v1 = Vec2::new(x , y - (1.5*GIZMO_SIZE_X * ammo_percent)/2. );
+        let v2 = Vec2::new(x , y + (1.5*GIZMO_SIZE_X * ammo_percent)/2.);
+        gizmos.line_gradient_2d(v1, v2, Color::WHITE, Color::GREEN);
+        gizmos.line_gradient_2d(v1 + Vec2::new(0.,2.), v2 + Vec2::new(0.,2.), Color::WHITE, Color::GREEN);
+
+        let y = y - 10.;
+        let v1 = Vec2::new(x - (1.25*GIZMO_SIZE_X * shape_percent)/2., y );
+        let v2 = Vec2::new(x + (1.25*GIZMO_SIZE_X * shape_percent)/2., y);
+        gizmos.line_gradient_2d(v1, v2, Color::GREEN, Color::TEAL);
+        gizmos.line_gradient_2d(v1 + Vec2::new(0.,2.), v2 + Vec2::new(0.,2.), Color::GREEN, Color::TEAL);
+
+    }
+
+
+}
 

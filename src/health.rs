@@ -14,6 +14,7 @@ pub struct Health {
     pub timer: ShieldTimer,
     shield_recharge: i64,
     max_shield: i64,
+    max_health: i64
     //max_health: i64,
 }
 
@@ -22,6 +23,7 @@ impl Health {
     pub fn new(shield_size: i64, health_size: i64, shield_time: f32, shield_recharge: i64) -> Health {
         Health {
             shield: shield_size,
+            max_health: health_size,
             health: health_size,
             is_alive: true,
             timer: ShieldTimer(Timer::new(Duration::from_secs_f32(shield_time), TimerMode::Once)),
@@ -53,7 +55,9 @@ impl Health {
     }
 
     pub fn get_health(&self) -> i64 {self.health}
+    pub fn get_max_health(&self) -> i64 {self.max_health}
     pub fn get_shield(&self) -> i64 {self.shield}
+    pub fn get_max_shield(&self) -> i64 { self.max_shield}
 
     pub fn recharge_shield(&mut self){
         self.shield =  if self.shield + self.shield_recharge <= self.max_shield {self.shield + self.shield_recharge}  else {self.max_shield};

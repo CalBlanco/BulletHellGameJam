@@ -54,11 +54,9 @@ impl Plugin for BulletHellElite {
                 bullet::bullet_on_bullet_collision,
                 enemy::enemy_control, 
                 enemy::wave_manager,
-                player::update_player_health, 
-                player::update_player_shield, 
                 player::update_player_score, 
                 player::update_time_display,
-                player::update_ammo_display,
+                player::update_player_gizmos,
                 health::shield_tick, 
                 move_background_image
                 ).run_if(in_state(GameState::Game)))

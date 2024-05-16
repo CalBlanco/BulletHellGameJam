@@ -2,7 +2,7 @@ use bevy::{math::bounding::{Aabb2d, BoundingCircle, IntersectsVolume}, prelude::
 use bevy_hanabi::{EffectProperties, EffectSpawner};
 use rand::Rng;
 
-use crate::{enemy, game::ScoreBoard, gun::{self, BulletBlueprint}, health, player::{self, PlayerControlled}};
+use crate::{enemy, game::ScoreBoard, gun::{self, BulletBlueprint}, health, player::{self, PlayerControlled}, shapes};
 use super::{T_BOUND, B_BOUND, L_BOUND, R_BOUND};
 
 const BULLET_DEATH: f32 = 5.;
@@ -150,7 +150,7 @@ pub fn apply_collision_damage(
     mut commands: Commands,
     mut score_events: EventWriter<ScoreEvent>,
     enemy_query: Query<(Entity, &enemy::Enemy, &Transform), (With<enemy::Collider>, Without<EffectProperties>)>,
-    mut gun_query: Query<&mut gun::Gun, With<player::PlayerControlled>>,
+    mut gun_query: Query<(&mut gun::Gun, &mut shapes::ShapeGun), With<player::PlayerControlled>>,
     mut effect: Query<(
         &mut EffectProperties,
         &mut EffectSpawner,
@@ -181,7 +181,7 @@ pub fn apply_collision_damage(
                             let (score, mul) = en.get_type().get_score();
                             score_events.send(ScoreEvent(score, mul));
 
-                            if let Ok(mut gun) = gun_query.get_single_mut() { // Gun Upgrades from kills
+                            if let Ok((mut gun, mut s_gun)) = gun_query.get_single_mut() { // Gun Upgrades from kills
                                 let gun_damage = gun.get_bullet_damage(); // get gun damage and speed 
                                 let gun_speed: f32 = gun.get_bullet_delay();
 
@@ -196,6 +196,16 @@ pub fn apply_collision_damage(
                                             3 => gun.add_bullet(gun::BulletBlueprint(1, |_| 10., |_| 5., 0., true, 50)),
                                             _ => gun.add_bullet(gun::BulletBlueprint(1, |_| 10., |_| -5., 0., true, 50))
                                         }
+
+                                        let extra_shape_shot = rand::thread_rng().gen_range(0..10); // 10% chance to give the player an extra shape shot 
+                                        match extra_shape_shot {
+                                            0..=9 => {},
+                                            10 => {
+                                                let shots = s_gun.get_max_shots() + 1;
+                                                s_gun.set_max_shots(shots);
+                                            },
+                                            _ => {}
+                                        }
                                         
                                     }
                                     enemy::EnemyType::Wavy => {
@@ -204,8 +214,15 @@ pub fn apply_collision_damage(
                                     enemy::EnemyType::Spammer => {
                                         gun.set_bullet_delay(gun_speed - 0.0005)
                                     },
-                                    enemy::EnemyType::Linear => {},
-                                    enemy::EnemyType::Melee => {}
+                                    enemy::EnemyType::Linear => {
+                                        let cur = gun.get_max_ammo();
+                                        gun.set_max_ammo(cur+1)
+                                    },
+                                    enemy::EnemyType::Melee => {
+                                        let delay = gun.reload_stopwatch.duration().as_secs_f32() - 0.005;
+                                        let delay = if delay > 1.6 {delay} else {1.6};
+                                        gun.set_reload_delay(delay);
+                                    }
                                 }    
                             }
 
