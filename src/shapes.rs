@@ -1,5 +1,10 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI, time::Duration};
 
+use bevy::prelude::*;
+
+use crate::gun::BulletBlueprint;
+
+const SQRT_3: f32 = 1.73205080757;
 
 #[allow(dead_code)]
 /// Generate points on a circle 
@@ -55,7 +60,7 @@ pub fn generate_line(x1: f32, y1: f32, x2: f32, y2: f32, num_bullets: usize) -> 
 }
 
 /// Generate a triangle based on 3  points ()
-pub fn generate_triangle(p1: (f32,f32), p2: (f32,f32), p3: (f32, f32), num_bullets: usize) -> Result<Vec<(f32,f32)>, &'static str> {
+pub fn generate_triangle(p1: (f32,f32), p2: (f32,f32), p3: (f32, f32), num_bullets: usize) -> Vec<(f32,f32)> {
     let mut vec: Vec<(f32, f32)> = Vec::new();
     
     
@@ -67,19 +72,138 @@ pub fn generate_triangle(p1: (f32,f32), p2: (f32,f32), p3: (f32, f32), num_bulle
     vec.extend(line_1);
     vec.extend(line_2);
 
-    Ok(vec)
+    vec
 }
 
 
+pub enum ShapeType {
+    Triangle, 
+    Square,
+    Circle,
+    HorizontalLine,
+    VerticalLine,
+}
 
-/* fn angle_between(p1: (f32, f32), p2: (f32, f32)) -> f32 {
-    let dx = p2.0 - p1.0;
-    let dy = p2.1 - p1.1;
-    let angle = (dy).atan2(dx);
+pub struct ShapeBloop{ pub offset: (f32,f32), pub num_bullets: usize, pub t: ShapeType, pub size_scale: (f32, f32)}
 
-    let degrees = angle * 180. / PI;
-    let degrees = degrees % 360.;
-    let degrees = if degrees < 0. {degrees + 360.} else {degrees};
+#[derive(Component)]
+pub struct  ShapeGun {
+    max_shots: u64,
+    shots: u64,
+    size: f32,
+    pub timer: Timer,
+    reload_time: f32,
+    bloops: Vec<ShapeBloop>,
+    pub bullet: BulletBlueprint
 
-    degrees
-} */
+}
+
+impl Default for ShapeGun {
+    fn default() -> Self {
+        ShapeGun {
+            max_shots: 10, 
+            shots: 10,
+            size: 200.,
+            timer: Timer::new(Duration::from_secs_f32(10.), TimerMode::Once),
+            reload_time: 10.,
+            bloops: Vec::new(),
+            bullet: BulletBlueprint(1, |y| y*y, |_| 0., 0., true, 50)
+        }
+
+    }
+}
+
+impl ShapeGun {
+    pub fn new(max_shots: u64, size: f32, reload: f32, bloops: Vec<ShapeBloop>, bullet: BulletBlueprint ) -> ShapeGun {
+        ShapeGun {
+            max_shots: max_shots,
+            shots: max_shots,
+            size: size,
+            reload_time: reload,
+            timer: Timer::new(Duration::from_secs_f32(reload), TimerMode::Once),
+            bloops: bloops,
+            bullet: bullet
+        }
+    }
+
+    /// Return a vector of all the points this shape will need to make 
+    pub fn get_shapes(&self, x: f32, y: f32) -> Vec<(f32, f32)>{
+        let mut vec = Vec::new();
+        for bloop in &self.bloops {
+            match bloop.t {
+                ShapeType::HorizontalLine => {
+                    let x1 = x - (self.size*bloop.size_scale.0) + bloop.offset.0;
+                    let x2 = x + (self.size*bloop.size_scale.0) + bloop.offset.0;
+                    let y0 = y + bloop.offset.1;
+
+                    let points = generate_line(x1, y0, x2, y0, bloop.num_bullets);
+                    vec.extend(points);
+                },
+                ShapeType::VerticalLine => {
+                    let y1 = y - (self.size*bloop.size_scale.1) + bloop.offset.1;
+                    let y2 = y + (self.size*bloop.size_scale.1) + bloop.offset.1;
+                    let x0 = x + bloop.offset.0;
+
+                    let points = generate_line(x0, y1, x0, y2, bloop.num_bullets);
+                    vec.extend(points);
+                },
+                ShapeType::Square => {
+                    let points = generate_square(x + bloop.offset.0, y + bloop.offset.1, (self.size*bloop.size_scale.0), bloop.num_bullets);
+                    vec.extend(points);
+                },
+                ShapeType::Circle => {
+                    let points = generate_circle(x + bloop.offset.0, y + bloop.offset.1 , (self.size*bloop.size_scale.0) / 2., bloop.num_bullets);
+                    vec.extend(points);
+                },
+                ShapeType::Triangle => { 
+                    let p0 = ((x - (self.size*bloop.size_scale.0) / 2.) + bloop.offset.0, y + bloop.offset.1);
+                    let p1 = ((x + (self.size*bloop.size_scale.0) / 2.) + bloop.offset.0, y + bloop.offset.1);
+                    let p2 = (x + bloop.offset.0, ((y + bloop.offset.1) + (((self.size*bloop.size_scale.1) / 2.) * SQRT_3)));
+
+                    let points = generate_triangle(p0, p1, p2, bloop.num_bullets);
+                    vec.extend(points);
+                },
+                _ => {}
+            }
+        }
+
+        vec
+    }
+    
+    pub fn shoot(&mut self){
+        self.shots = if ((self.shots - 1) as i64) < 0 {0} else {self.shots - 1};
+    }
+
+    pub fn reload(&mut self){
+        self.shots = self.max_shots;
+        self.timer.reset();
+    }
+
+    pub fn set_max_shots(&mut self, shots: u64){
+        self.max_shots = shots;
+    }
+
+    pub fn get_max_shots(&self) -> u64 { self.max_shots}
+    pub fn get_shots(&self) -> u64 {self.shots}
+
+    pub fn set_reload_time(&mut self, t: f32){
+        self.reload_time = t;
+        self.timer.set_duration(Duration::from_secs_f32(t)); 
+    }
+
+    pub fn add_bloop(&mut self, bloop: ShapeBloop){
+        self.bloops.push(bloop);
+    }
+
+    pub fn remove_bloop(&mut self, index:usize){
+        self.bloops.remove(index % self.bloops.len());
+    }
+
+    pub fn set_size(&mut self, size: f32){
+        self.size = if size > 1. {size} else {1.};
+    }
+
+    pub fn get_size(&self) -> f32 {self.size}
+
+   
+}

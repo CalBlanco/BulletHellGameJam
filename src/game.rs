@@ -28,7 +28,7 @@ impl ScoreBoard {
     }
 
     pub fn add_mul(&mut self, inc: u64){
-        self.mul = self.mul + inc;
+        self.mul = if  self.mul + inc < 17 {self.mul+inc} else {16};
     }
 
     pub fn set_mul(&mut self, set: u64){
@@ -57,6 +57,8 @@ impl Plugin for BulletHellElite {
                 player::update_player_health, 
                 player::update_player_shield, 
                 player::update_player_score, 
+                player::update_time_display,
+                player::update_ammo_display,
                 health::shield_tick, 
                 move_background_image
                 ).run_if(in_state(GameState::Game)))

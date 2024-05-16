@@ -2,7 +2,7 @@ use bevy::{math::bounding::{Aabb2d, BoundingCircle, IntersectsVolume}, prelude::
 use bevy_hanabi::{EffectProperties, EffectSpawner};
 use rand::Rng;
 
-use crate::{enemy, game::ScoreBoard, gun, health, player::{self, PlayerControlled}};
+use crate::{enemy, game::ScoreBoard, gun::{self, BulletBlueprint}, health, player::{self, PlayerControlled}};
 use super::{T_BOUND, B_BOUND, L_BOUND, R_BOUND};
 
 const BULLET_DEATH: f32 = 5.;
@@ -56,6 +56,7 @@ impl BulletBundle{
             bullet: bullet
         }
     }
+
 
 }
 
