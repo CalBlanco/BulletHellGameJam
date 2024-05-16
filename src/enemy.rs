@@ -3,7 +3,7 @@ use std::{f32::consts::PI, time::Duration};
 use bevy::prelude::*;
 use rand::Rng;
 
-use crate::{bullet, game::{self, GameTimer}, gun, health, shapes::generate_circle, B_BOUND};
+use crate::{bullet, game::GameTimer, gun, health, shapes::generate_circle, B_BOUND};
 
 use super::T_BOUND;
 
@@ -16,18 +16,18 @@ const R_BOUND: u16 = 500;
 const MELEE_PATH: EnemyPath = EnemyPath(|_| 0., |y| y*y / 30. );
 const LINEAR_PATH: EnemyPath = EnemyPath(|_| 2. , |_| 0.5 );
 const SPAMMER_PATH: EnemyPath = EnemyPath(|_| 0.75, |y| y.cos() + 0.2 );
-const WAVY_PATH: EnemyPath = EnemyPath(|_| 0.5, |y| y.cos() + 0.1 );
+const WAVY_PATH: EnemyPath = EnemyPath(|_| 0.5, |y| 3.*y.cos() + 0.1 );
 const SPAWNER_PATH: EnemyPath = EnemyPath(|_| 0.1, |y| (3.0*y).cos() );
 
 // Shot delays
 const LINEAR_DELAY: (f32, f32) = (0.5, 5.5);
 const SPAMMER_DELAY: (f32, f32) = (0.5, 1.5);
-const SPAWNER_DELAY: (f32, f32) = (3.5, 6.5);
+const SPAWNER_DELAY: (f32, f32) = (3.5, 5.5);
 
 // GUN + BULLET BLUEPRINTS   
-const GUN_BLUEPRINT_LINEAR: gun::GunBluePrint = gun::GunBluePrint(1.25, 20, 1);
-const GUN_BLUEPRINT_WAVY: gun::GunBluePrint = gun::GunBluePrint(1.5, 100, 2);
-const GUN_BLUEPRINT_SPAMMER: gun::GunBluePrint = gun::GunBluePrint(0.75, 10, 4);
+const GUN_BLUEPRINT_LINEAR: gun::GunBluePrint = gun::GunBluePrint(1.25, 20, 1, 1000, 2.0);
+const GUN_BLUEPRINT_WAVY: gun::GunBluePrint = gun::GunBluePrint(1.5, 100, 2, 1000, 2.0);
+const GUN_BLUEPRINT_SPAMMER: gun::GunBluePrint = gun::GunBluePrint(0.75, 10, 4, 3000, 2.0);
 
 const BULLET_STRAIGHT: gun::BulletBlueprint = gun::BulletBlueprint(-1, |_| 5., |_| 0., 0., false, 20);
 const BULLET_COS_POS: gun::BulletBlueprint = gun::BulletBlueprint(-1, |_| 2., |_| 0., 0., false, 20);
@@ -40,8 +40,8 @@ const BULLET_DAIG_NEG_1: gun::BulletBlueprint = gun::BulletBlueprint(-1, |_| 4.,
 const DEFAULT_FALL_SPEED: f32 = 20.;
 
 // Wave constants
-const WAVE_SIZE: u32 = 15; // multiplied by time elapsed (in minutes)
-const WAVE_INTERVAL: f32 = 10.;  // divided by time elapsed (in minutes)
+const WAVE_SIZE: u32 = 60; // multiplied by time elapsed (in minutes)
+const WAVE_INTERVAL: f32 = 45.;  // divided by time elapsed (in minutes)
 
 
 
@@ -204,6 +204,10 @@ pub fn enemy_control(
         }
         
     }
+
+    if sprite_position.iter().len() == 0 {
+        println!("No Enemies alive!")
+    }
 }
 
 
@@ -222,7 +226,7 @@ fn spawn_wave_box(wave_size: u32, asset_server: &mut Res<AssetServer>, commands:
 
         let rng = rand::thread_rng().gen_range(0..=100);
         match rng {
-            0..=20 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("enemies/melee.png"), health::Health::new(20,150, 3.5,5), MELEE_PATH, LINEAR_DELAY, gun::Gun::new(Vec::new(), 0., 0, 1)));},
+            0..=20 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("enemies/melee.png"), health::Health::new(20,150, 3.5,5), MELEE_PATH, LINEAR_DELAY, gun::Gun::new(Vec::new(), 0., 0, 1, 0, 0.)));},
             21..=40 => {
                 let mut starting_bullets = Vec::new();
                 starting_bullets.push(BULLET_STRAIGHT);
@@ -243,7 +247,7 @@ fn spawn_wave_box(wave_size: u32, asset_server: &mut Res<AssetServer>, commands:
                 commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spammer, asset_server.load("enemies/spammer.png"), health::Health::new(100,150, 3.0, 5), SPAMMER_PATH, SPAMMER_DELAY, gun::Gun::new_from_blueprint(starting_bullets, GUN_BLUEPRINT_SPAMMER)));
             },
             81..=100 => {
-                commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spawner, asset_server.load("enemies/spawner.png"), health::Health::new(200,250, 3.0, 5), SPAWNER_PATH, SPAWNER_DELAY, gun::Gun::new(Vec::new(), 0., 0, 1)));
+                commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spawner, asset_server.load("enemies/spawner.png"), health::Health::new(200,250, 3.0, 5), SPAWNER_PATH, SPAWNER_DELAY, gun::Gun::new(Vec::new(), 0., 0, 1, 1000, 2.0)));
             },
             _ => ()
 

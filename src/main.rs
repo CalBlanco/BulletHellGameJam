@@ -89,4 +89,6 @@ impl<T: Component> EzTextBundle<T> {
             tag: tag
         }
     }
+
+    
 }
