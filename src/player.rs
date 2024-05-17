@@ -185,6 +185,7 @@ impl PlayerBundle {
         s_gun.add_bloop(ShapeBloop{ offset: (0., 50.), num_bullets: 50, t: shapes::ShapeType::Triangle, size_scale: (0.2, 0.6)});
         s_gun.add_bloop(ShapeBloop{ offset: (55., -50.), num_bullets: 20, t: shapes::ShapeType::Triangle, size_scale: (0.2, 0.6)});
         s_gun.add_bloop(ShapeBloop{ offset: (-55., 0.), num_bullets: 30, t: shapes::ShapeType::Triangle, size_scale: (0.2, 0.6)});
+        s_gun.add_bloop(ShapeBloop{ offset: (0., 120.), num_bullets: 30, t: shapes::ShapeType::Circle, size_scale: (1.6, 1.6)});
 
         s_gun.bullet = gun::BulletBlueprint(1, |y| y*y, |x| 5. * (x*5.).cos(), 0., true, 60);
 
@@ -242,7 +243,6 @@ pub fn update_time_display(
 
 
 const GIZMO_SIZE_X: f32= 100.;
-const GIZMO_SIZE_Y: f32= 20.;
 
 pub fn update_player_gizmos(
     player_data: Query<(&mut health::Health, &mut gun::Gun, &mut shapes::ShapeGun, &Transform), With<PlayerControlled>>,
@@ -255,6 +255,19 @@ pub fn update_player_gizmos(
         let shield_percent = health.get_shield() as f32 / health.get_max_shield() as f32;
 
         
+        let ammo_percent = gun.get_ammo() as f32 / gun.get_max_ammo() as f32;
+        let shape_percent = sgun.get_shots() as f32 / sgun.get_max_shots() as f32;
+
+        let v1 = Vec2::new(x - 18., y - (GIZMO_SIZE_X * ammo_percent)/2. );
+        let v2 = Vec2::new(x - 18. , y + (GIZMO_SIZE_X * ammo_percent)/2.);
+        gizmos.line_gradient_2d(v1, v2, Color::WHITE, Color::GREEN);
+        gizmos.line_gradient_2d(v1 + Vec2::new(2.,0.), v2 + Vec2::new(2.,0.), Color::WHITE, Color::GREEN);
+
+        let v1 = Vec2::new(x + 18., y + (GIZMO_SIZE_X * shape_percent)/2.  );
+        let v2 = Vec2::new(x + 18., y - (GIZMO_SIZE_X * shape_percent)/2. );
+        gizmos.line_gradient_2d(v1, v2, Color::GREEN, Color::TEAL);
+        gizmos.line_gradient_2d(v1 + Vec2::new(2.,0.), v2 + Vec2::new(2.,2.), Color::GREEN, Color::TEAL);
+
         
         let y = y - 32.;
         let v1 = Vec2::new(x - (GIZMO_SIZE_X * health_percent)/2., y );
@@ -282,21 +295,7 @@ pub fn update_player_gizmos(
         gizmos.line_gradient_2d(v1 + Vec2::new(0.,-6.), v2 + Vec2::new(0.,-6.), Color::BLUE, Color::TEAL);
 
 
-        let ammo_percent = gun.get_ammo() as f32 / gun.get_max_ammo() as f32;
-        let shape_percent = sgun.get_shots() as f32 / sgun.get_max_shots() as f32;
-
-        let y = y -15.;
-        let v1 = Vec2::new(x , y - (1.5*GIZMO_SIZE_X * ammo_percent)/2. );
-        let v2 = Vec2::new(x , y + (1.5*GIZMO_SIZE_X * ammo_percent)/2.);
-        gizmos.line_gradient_2d(v1, v2, Color::WHITE, Color::GREEN);
-        gizmos.line_gradient_2d(v1 + Vec2::new(0.,2.), v2 + Vec2::new(0.,2.), Color::WHITE, Color::GREEN);
-
-        let y = y - 10.;
-        let v1 = Vec2::new(x - (1.25*GIZMO_SIZE_X * shape_percent)/2., y );
-        let v2 = Vec2::new(x + (1.25*GIZMO_SIZE_X * shape_percent)/2., y);
-        gizmos.line_gradient_2d(v1, v2, Color::GREEN, Color::TEAL);
-        gizmos.line_gradient_2d(v1 + Vec2::new(0.,2.), v2 + Vec2::new(0.,2.), Color::GREEN, Color::TEAL);
-
+        
     }
 
 

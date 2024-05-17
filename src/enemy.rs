@@ -174,8 +174,8 @@ pub fn enemy_control(
             let spawn_y = transform.translation.y - 30.;
             match enemy.t {
                 EnemyType::Spawner => {
-                    let rng_size: u32 = rand::thread_rng().gen_range(35..70);
-                    let rng_rad: f32 = rand::thread_rng().gen_range(70. .. 180.);
+                    let rng_size: u32 = rand::thread_rng().gen_range(25..40);
+                    let rng_rad: f32 = rand::thread_rng().gen_range(100. .. 180.);
                     
                     let roll = rand::thread_rng().gen_range(0..3);
                     let x = transform.translation.x;
