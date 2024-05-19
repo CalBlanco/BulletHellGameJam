@@ -197,10 +197,13 @@ pub fn apply_collision_damage(
                                             _ => gun.add_bullet(gun::BulletBlueprint(1, |_| 10., |_| -5., 0., true, 50))
                                         }
 
-                                        let extra_shape_shot = rand::thread_rng().gen_range(0..10); // 10% chance to give the player an extra shape shot 
+                                        let extra_shape_shot = rand::thread_rng().gen_range(0..20); // 1/20 chance to increase shape size or get an extra shape shot
                                         match extra_shape_shot {
-                                            0..=9 => {},
-                                            10 => {
+                                            8 => {
+                                                let size = s_gun.get_size();
+                                                s_gun.set_size(size + 1.2);
+                                            },
+                                            9 => {
                                                 let shots = s_gun.get_max_shots() + 1;
                                                 s_gun.set_max_shots(shots);
                                             },

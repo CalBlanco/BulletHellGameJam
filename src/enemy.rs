@@ -22,7 +22,7 @@ const SPAWNER_PATH: EnemyPath = EnemyPath(|_| 0.1, |y| (3.0*y).cos() + (1./(10.*
 // Shot delays
 const LINEAR_DELAY: (f32, f32) = (0.5, 2.5);
 const SPAMMER_DELAY: (f32, f32) = (0.5, 1.5);
-const SPAWNER_DELAY: (f32, f32) = (1.5, 7.5);
+const SPAWNER_DELAY: (f32, f32) = (2.5, 9.5);
 
 // GUN + BULLET BLUEPRINTS   
 const GUN_BLUEPRINT_LINEAR: gun::GunBluePrint = gun::GunBluePrint(1.25, 20, 1, 1000, 2.0);

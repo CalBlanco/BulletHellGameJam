@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+use crate::game::ScoreBoard;
+
 use super::GameState;
 
 
@@ -49,7 +51,7 @@ fn button_system(
     }
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>, score: Res<ScoreBoard>) {
     // ui camera
     commands.spawn(Camera2dBundle::default());
     commands
@@ -68,6 +70,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             .spawn(NodeBundle {
                 style: Style {
                     width: Val::Percent(100.0),
+                    align_content: AlignContent::FlexStart,
+                    justify_content: JustifyContent::Center,
                     ..Default::default()
                 },
                 ..Default::default()

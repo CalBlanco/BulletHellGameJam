@@ -93,6 +93,7 @@ pub struct  ShapeGun {
     size: f32,
     pub timer: Timer,
     reload_time: f32,
+    bullet_size: usize,
     bloops: Vec<ShapeBloop>,
     pub bullet: BulletBlueprint
 
@@ -107,7 +108,8 @@ impl Default for ShapeGun {
             timer: Timer::new(Duration::from_secs_f32(10.), TimerMode::Once),
             reload_time: 10.,
             bloops: Vec::new(),
-            bullet: BulletBlueprint(1, |y| y*y, |_| 0., 0., true, 50)
+            bullet: BulletBlueprint(1, |y| y*y, |_| 0., 0., true, 50),
+            bullet_size: 25
         }
 
     }
@@ -122,13 +124,15 @@ impl ShapeGun {
             reload_time: reload,
             timer: Timer::new(Duration::from_secs_f32(reload), TimerMode::Once),
             bloops: bloops,
-            bullet: bullet
+            bullet: bullet,
+            bullet_size: 25
         }
     }
 
     /// Return a vector of all the points this shape will need to make 
     pub fn get_shapes(&self, x: f32, y: f32) -> Vec<(f32, f32)>{
         let mut vec = Vec::new();
+        let bullet_count =(( self.size / 100.) as usize * self.bullet_size) as usize;
         for bloop in &self.bloops {
             match bloop.t {
                 ShapeType::HorizontalLine => {
@@ -136,7 +140,7 @@ impl ShapeGun {
                     let x2 = x + (self.size*bloop.size_scale.0) + bloop.offset.0;
                     let y0 = y + bloop.offset.1;
 
-                    let points = generate_line(x1, y0, x2, y0, bloop.num_bullets);
+                    let points = generate_line(x1, y0, x2, y0, bullet_count);
                     vec.extend(points);
                 },
                 ShapeType::VerticalLine => {
@@ -144,15 +148,15 @@ impl ShapeGun {
                     let y2 = y + (self.size*bloop.size_scale.1) + bloop.offset.1;
                     let x0 = x + bloop.offset.0;
 
-                    let points = generate_line(x0, y1, x0, y2, bloop.num_bullets);
+                    let points = generate_line(x0, y1, x0, y2, bullet_count);
                     vec.extend(points);
                 },
                 ShapeType::Square => {
-                    let points = generate_square(x + bloop.offset.0, y + bloop.offset.1, (self.size*bloop.size_scale.0), bloop.num_bullets);
+                    let points = generate_square(x + bloop.offset.0, y + bloop.offset.1, (self.size*bloop.size_scale.0), bullet_count / 2);
                     vec.extend(points);
                 },
                 ShapeType::Circle => {
-                    let points = generate_circle(x + bloop.offset.0, y + bloop.offset.1 , (self.size*bloop.size_scale.0) / 2., bloop.num_bullets);
+                    let points = generate_circle(x + bloop.offset.0, y + bloop.offset.1 , (self.size*bloop.size_scale.0) / 2., bullet_count);
                     vec.extend(points);
                 },
                 ShapeType::Triangle => { 
@@ -160,7 +164,7 @@ impl ShapeGun {
                     let p1 = ((x + (self.size*bloop.size_scale.0) / 2.) + bloop.offset.0, y + bloop.offset.1);
                     let p2 = (x + bloop.offset.0, ((y + bloop.offset.1) + (((self.size*bloop.size_scale.1) / 2.) * SQRT_3)));
 
-                    let points = generate_triangle(p0, p1, p2, bloop.num_bullets);
+                    let points = generate_triangle(p0, p1, p2, bullet_count / 3);
                     vec.extend(points);
                 },
                 _ => {}
