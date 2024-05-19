@@ -20,9 +20,9 @@ const WAVY_PATH: EnemyPath = EnemyPath(|_| 0.5, |y| 3.*y.cos() + 0.1 );
 const SPAWNER_PATH: EnemyPath = EnemyPath(|_| 0.1, |y| (3.0*y).cos() + (1./(10.*y)));
 
 // Shot delays
-const LINEAR_DELAY: (f32, f32) = (0.5, 5.5);
+const LINEAR_DELAY: (f32, f32) = (0.5, 2.5);
 const SPAMMER_DELAY: (f32, f32) = (0.5, 1.5);
-const SPAWNER_DELAY: (f32, f32) = (3.5, 5.5);
+const SPAWNER_DELAY: (f32, f32) = (1.5, 7.5);
 
 // GUN + BULLET BLUEPRINTS   
 const GUN_BLUEPRINT_LINEAR: gun::GunBluePrint = gun::GunBluePrint(1.25, 20, 1, 1000, 2.0);
@@ -174,25 +174,25 @@ pub fn enemy_control(
             let spawn_y = transform.translation.y - 30.;
             match enemy.t {
                 EnemyType::Spawner => {
-                    let rng_size: u32 = rand::thread_rng().gen_range(25..40);
-                    let rng_rad: f32 = rand::thread_rng().gen_range(100. .. 180.);
                     
+                    let rng_rad: f32 = rand::thread_rng().gen_range(100. .. 580.);
+                    let size = ((rng_rad / 100.) * 25. ) as usize;
                     let roll = rand::thread_rng().gen_range(0..3);
                     let x = transform.translation.x;
                     let y = transform.translation.y;
                     let points = match roll {
                         0 => {
-                            generate_circle(x, y, rng_rad, rng_size as usize)
+                            generate_circle(x, y, rng_rad, size as usize)
                         },
                         1 => {
-                            generate_square(x, y, rng_rad, rng_size as usize)
+                            generate_square(x, y, rng_rad, size/2)
                         },
                         2 => {
                             
-                            generate_triangle((x - rng_rad/2., y), (x + rng_rad/2., y), (x, y+rng_rad/2.), rng_size as usize)
+                            generate_triangle((x - rng_rad/2., y), (x + rng_rad/2., y), (x, y+rng_rad/2.), size / 3)
                         }
                         _ => {
-                            generate_line(x - rng_rad/2., y - rng_rad/2., x + rng_rad/2., y + rng_rad/2., rng_size as usize)
+                            generate_line(x - rng_rad/2., y - rng_rad/2., x + rng_rad/2., y + rng_rad/2., size)
                         }
                     };
 

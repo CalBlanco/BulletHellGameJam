@@ -56,7 +56,8 @@ impl Plugin for BulletHellElite {
                 enemy::wave_manager,
                 player::update_player_score, 
                 player::update_time_display,
-                player::update_player_gizmos,
+                player::update_health_display,
+                player::update_ammo_display,
                 health::shield_tick, 
                 move_background_image
                 ).run_if(in_state(GameState::Game)))

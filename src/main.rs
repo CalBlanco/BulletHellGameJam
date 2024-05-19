@@ -8,6 +8,9 @@ const R_BOUND: u16 = 500;
 pub const PLAYBACK_SPEED: f32 = 2.0;
 pub const PLAYBACK_VOL: f32 = 0.15;
 
+const RES_X: f32 = 1040.;
+const RES_Y: f32 = 960.;
+
 mod bullet;
 mod enemy;
 mod player;
@@ -33,15 +36,17 @@ fn main() {
                 primary_window: Some(Window {
                     title: "BH: Elite".into(),
                     name: Some("BulletHellElite".into()),
-                    resolution: (1040., 960.).into(),
+                    resolution: (RES_X, RES_Y).into(),
                     present_mode: PresentMode::AutoVsync,
                     // Tells wasm not to override default event handling, like F5, Ctrl+R etc.
                     prevent_default_event_handling: false,
                     window_theme: Some(WindowTheme::Dark),
                     enabled_buttons: bevy::window::EnabledButtons {
-                        maximize: true,
+                        maximize: false,
                         ..Default::default()
                     },
+                    resize_constraints: WindowResizeConstraints { min_width: RES_X, min_height: RES_Y, max_width: RES_X, max_height: RES_Y },
+                    
                     // This will spawn an invisible window
                     // The window will be made visible in the make_visible() system after 3 frames.
                     // This is useful when you want to avoid the white window that shows up before the GPU is ready to render the app.
