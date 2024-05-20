@@ -1,6 +1,6 @@
 use bevy::{core_pipeline::{bloom::BloomSettings, tonemapping::Tonemapping}, prelude::*, time::Stopwatch};
 
-use crate::{bullet, enemy, explosion, health, player};
+use crate::{bullet, enemy, explosion, health, player, power_ups};
 use super::GameState;
 
 
@@ -59,6 +59,8 @@ impl Plugin for BulletHellElite {
                 player::update_health_display,
                 player::update_ammo_display,
                 health::shield_tick, 
+                power_ups::move_powerups,
+                power_ups::handle_powerup_collision,
                 move_background_image
                 ).run_if(in_state(GameState::Game)))
             .add_systems(OnExit(GameState::Game), cleanup);

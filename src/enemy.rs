@@ -3,13 +3,16 @@ use std::{f32::consts::PI, time::Duration};
 use bevy::prelude::*;
 use rand::Rng;
 
-use crate::{bullet, game::GameTimer, gun, health, shapes::{self, generate_circle, generate_line, generate_square, generate_triangle}, B_BOUND};
+use crate::{bullet, game::GameTimer, gun, health, power_ups, shapes::{self, generate_circle, generate_line, generate_square, generate_triangle}, B_BOUND};
 
 use super::T_BOUND;
 
 const L_BOUND: u16 = 500;
 const R_BOUND: u16 = 500;
 
+
+#[derive(Resource)]
+pub struct PowerUpTimer(pub Timer);
 
 
 // Paths
@@ -145,10 +148,11 @@ pub fn enemy_control(
     time: Res<Time>,
     mut sprite_position: Query<(Entity, &mut Transform, &mut Enemy), With<Enemy>>,
     mut commands: Commands,
-    mut asset_server: Res<AssetServer>
+    mut asset_server: Res<AssetServer>,
+    mut p_timer: ResMut<PowerUpTimer>
 
 ) {
-    
+    p_timer.0.tick(time.delta()); // tick the power up timer always and reset after enemies die
     for(_, mut transform, mut enemy) in &mut sprite_position{
         enemy.tick += time.delta_seconds();
         // Implement bounding
@@ -226,7 +230,12 @@ pub fn enemy_control(
     }
 
     if sprite_position.iter().len() == 0 {
-        println!("No Enemies alive!")
+        
+        
+        if p_timer.0.finished() {
+            power_ups::spawn_powerup_wave(&mut commands, &asset_server);
+            p_timer.0.reset();
+        }
     }
 }
 
@@ -287,6 +296,7 @@ pub fn init_wave(
 ){
         spawn_wave_box(WAVE_SIZE, &mut asset_server, &mut commands);
         commands.insert_resource(WaveTimer(Timer::new(Duration::from_secs_f32(WAVE_INTERVAL), TimerMode::Repeating)));
+        commands.insert_resource(PowerUpTimer(Timer::new(Duration::from_secs_f32(8.), TimerMode::Once)));
 }
 
 pub fn wave_manager(

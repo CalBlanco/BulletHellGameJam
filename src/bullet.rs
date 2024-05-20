@@ -122,7 +122,7 @@ pub fn bullet_movement(
 }
 
 /// Check if a bullet has intersected a enemy / bounding box 
-fn bullet_collision(bullet: Aabb2d, enemy: Aabb2d) -> Option<bool> {
+pub fn bullet_collision(bullet: Aabb2d, enemy: Aabb2d) -> Option<bool> {
     if bullet.intersects(&enemy) {
         return Some(true)
     }else {
@@ -181,53 +181,6 @@ pub fn apply_collision_damage(
                             let (score, mul) = en.get_type().get_score();
                             score_events.send(ScoreEvent(score, mul));
 
-                            if let Ok((mut gun, mut s_gun)) = gun_query.get_single_mut() { // Gun Upgrades from kills
-                                let gun_damage = gun.get_bullet_damage(); // get gun damage and speed 
-                                let gun_speed: f32 = gun.get_bullet_delay();
-
-                                match en.get_type() { // match type for reward / consequence 
-                                    enemy::EnemyType::Spawner => {
-                                       
-                                        let b_choice = rand::thread_rng().gen_range(0..5);
-                                        match b_choice {
-                                            0 => gun.add_bullet(gun::BulletBlueprint(1, |y| y*y, |_| 0., 0., true, 50)),
-                                            1 => gun.add_bullet(gun::BulletBlueprint(1, |y| y*y, |_| 5., 0., true, 50)),
-                                            2 => gun.add_bullet(gun::BulletBlueprint(1, |y| y*y, |_| -5., 0., true, 50)),
-                                            3 => gun.add_bullet(gun::BulletBlueprint(1, |_| 10., |_| 5., 0., true, 50)),
-                                            _ => gun.add_bullet(gun::BulletBlueprint(1, |_| 10., |_| -5., 0., true, 50))
-                                        }
-
-                                        let extra_shape_shot = rand::thread_rng().gen_range(0..20); // 1/20 chance to increase shape size or get an extra shape shot
-                                        match extra_shape_shot {
-                                            8 => {
-                                                let size = s_gun.get_size();
-                                                s_gun.set_size(size + 1.2);
-                                            },
-                                            9 => {
-                                                let shots = s_gun.get_max_shots() + 1;
-                                                s_gun.set_max_shots(shots);
-                                            },
-                                            _ => {}
-                                        }
-                                        
-                                    }
-                                    enemy::EnemyType::Wavy => {
-                                        gun.set_bullet_damage(gun_damage + 30)
-                                    },
-                                    enemy::EnemyType::Spammer => {
-                                        gun.set_bullet_delay(gun_speed - 0.0005)
-                                    },
-                                    enemy::EnemyType::Linear => {
-                                        let cur = gun.get_max_ammo();
-                                        gun.set_max_ammo(cur+1)
-                                    },
-                                    enemy::EnemyType::Melee => {
-                                        let delay = gun.reload_stopwatch.duration().as_secs_f32() - 0.005;
-                                        let delay = if delay > 1.6 {delay} else {1.6};
-                                        gun.set_reload_delay(delay);
-                                    }
-                                }    
-                            }
 
                             let Ok((
                                 mut properties,

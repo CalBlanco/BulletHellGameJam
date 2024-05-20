@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::prelude::*;
 
 #[derive(Resource)]
-pub struct ShieldTimer(Timer);
+pub struct ShieldTimer(pub Timer);
 
 
 #[derive(Component)]
@@ -70,6 +70,21 @@ impl Health {
     pub fn can_shield_recharge(&self) -> bool {
         self.timer.0.finished()
     }
+
+    pub fn set_max_health(&mut self, health: i64){
+        self.max_health = health;
+    }
+
+    pub fn set_max_shield(&mut self, shield: i64){
+        self.max_shield = shield;
+    }
+
+    pub fn set_recharge(&mut self, recharge: i64){
+        self.shield_recharge = recharge;
+    }
+
+    pub fn get_recharge(&self) -> i64 { self.shield_recharge }
+ 
 
   
 }
