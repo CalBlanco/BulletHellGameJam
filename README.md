@@ -80,3 +80,6 @@ Ya boi (aka Me aka Jim Dangle)
 ### Background image
 tbh i dont fully remember some license free website
 
+## If images on readme dont load try using the github
+https://github.com/Jimdangle/BulletHellGameJam
+
