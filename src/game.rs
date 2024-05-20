@@ -10,7 +10,7 @@ pub struct BulletHellElite;
 pub struct GameTimer(pub Stopwatch);
 
 #[derive(Resource)]
-pub struct ScoreBoard { score: u64, mul: u64 }
+pub struct ScoreBoard { score: u64, mul: u64, waves: u64, game_time: f32 }
 
 #[derive(Component)]
 pub struct MovingBackground(f32);
@@ -36,6 +36,16 @@ impl ScoreBoard {
     }
 
     pub fn get_mul(&self) -> u64 { self.mul }
+
+    pub fn get_waves(&self) -> u64 {self.waves}
+
+    pub fn increment_wave(&mut self){
+        self.waves = self.waves + 1;
+    }
+
+    pub fn get_game_time(&self) -> f32 {self.game_time}
+
+    pub fn set_game_time(&mut self, gt: f32) {self.game_time = gt;}
 }
 
 impl Plugin for BulletHellElite {
@@ -43,7 +53,7 @@ impl Plugin for BulletHellElite {
         app
             .add_event::<bullet::CollisionEvent>()
             .add_event::<bullet::ScoreEvent>()
-            .insert_resource(ScoreBoard {score: 0, mul: 1})
+            .insert_resource(ScoreBoard {score: 0, mul: 1, waves:0, game_time: 0.0})
             .add_systems(OnEnter(GameState::Game),(setup, player::spawn_player, enemy::init_wave, explosion::setup).before(player::sprite_movement))
             .add_systems(FixedPreUpdate, advance_game_timer.run_if(in_state(GameState::Game)))
             .add_systems(FixedUpdate, (

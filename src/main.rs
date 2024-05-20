@@ -1,3 +1,4 @@
+#![windows_subsystem = "windows"]
 use bevy::{diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}, prelude::*, window::{PresentMode, WindowTheme}};
 use bevy_hanabi::prelude::*;
 
@@ -56,8 +57,8 @@ fn main() {
                 }),
                 ..default()
             }),
-            LogDiagnosticsPlugin::default(),
-            FrameTimeDiagnosticsPlugin,
+            /* LogDiagnosticsPlugin::default(),
+            FrameTimeDiagnosticsPlugin, */
         ))
         .add_plugins(HanabiPlugin)
         .init_state::<GameState>()

@@ -4,7 +4,7 @@ use bevy::prelude::*;
 
 
 
-use crate::{bullet, game, gun, health, shapes::{self, ShapeBloop}, GameState};
+use crate::{bullet, game::{self, GameTimer, ScoreBoard}, gun, health, shapes::{self, ShapeBloop}, GameState};
 
 use super::{EzTextBundle, B_BOUND, L_BOUND, R_BOUND};
 
@@ -46,6 +46,8 @@ pub fn sprite_movement(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut game_state: ResMut<NextState<GameState>>,
+    mut score_board: ResMut<ScoreBoard>,
+    game_time: Res<GameTimer>
 ) {
     
     if let Ok((_, mut transform , mut gun, mut s_gun)) = sprite_position.get_single_mut() {
@@ -157,6 +159,8 @@ pub fn sprite_movement(
         }
     }
     else{
+        score_board.set_game_time(game_time.0.elapsed_secs());
+        
         game_state.set(GameState::Menu); // restart game when player is unfindable (dead)
     }
 }
@@ -182,8 +186,7 @@ impl PlayerBundle {
         starting_bullets.push(gun::BulletBlueprint(1,|_| 20., |_: f32| 0., 0., true, 50));
         
         let mut s_gun = shapes::ShapeGun::default();
-        s_gun.add_bloop(ShapeBloop{ offset: (0., 50.), num_bullets: 20, t: shapes::ShapeType::Triangle, size_scale: (0.2, 0.6)});
-        s_gun.add_bloop(ShapeBloop{ offset: (0., 120.), num_bullets: 50, t: shapes::ShapeType::Circle, size_scale: (2.6, 2.6)});
+        s_gun.add_bloop(ShapeBloop{ offset: (0., 120.), num_bullets: 50, t: shapes::ShapeType::Circle, size_scale: (1.6, 1.6)});
 
         s_gun.bullet = gun::BulletBlueprint(1, |y| y*y, |x| 5. * (x*5.).cos(), 0., true, 60);
 
@@ -194,7 +197,7 @@ impl PlayerBundle {
                 ..default()
             },
             control: PlayerControlled,
-            health: health::Health::new(SHIELD_SIZE, HEALTH_SIZE, 3.75, 100),
+            health: health::Health::new(SHIELD_SIZE, HEALTH_SIZE, 3.75, 15),
             gun: gun::Gun::new(starting_bullets, SHOT_DELAY, BULLET_DAMAGE, 10, 50, 3.0),
             s_gun: s_gun
         }

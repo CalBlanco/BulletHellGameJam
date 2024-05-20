@@ -3,7 +3,7 @@ use std::{f32::consts::PI, time::Duration};
 use bevy::prelude::*;
 use rand::Rng;
 
-use crate::{bullet, game::GameTimer, gun, health, power_ups, shapes::{self, generate_circle, generate_line, generate_square, generate_triangle}, B_BOUND};
+use crate::{bullet, game::{GameTimer, ScoreBoard}, gun, health, power_ups, shapes::{generate_circle, generate_line, generate_square, generate_triangle}, B_BOUND};
 
 use super::T_BOUND;
 
@@ -43,7 +43,7 @@ const BULLET_DAIG_NEG_1: gun::BulletBlueprint = gun::BulletBlueprint(-1, |_| 4.,
 const DEFAULT_FALL_SPEED: f32 = 20.;
 
 // Wave constants
-const WAVE_SIZE: u32 = 15; // multiplied by time elapsed (in minutes)
+const WAVE_SIZE: u32 = 10; // multiplied by time elapsed (in minutes)
 const WAVE_INTERVAL: f32 = 45.;  // divided by time elapsed (in minutes)
 
 
@@ -255,19 +255,19 @@ fn spawn_wave_box(wave_size: u32, asset_server: &mut Res<AssetServer>, commands:
 
         let rng = rand::thread_rng().gen_range(0..=100);
         match rng {
-            0..=20 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("enemies/melee.png"), health::Health::new(20,150, 3.5,5), MELEE_PATH, LINEAR_DELAY, gun::Gun::new(Vec::new(), 0., 0, 1, 0, 0.)));},
-            21..=40 => {
+            0..=23 => {commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Melee, asset_server.load("enemies/melee.png"), health::Health::new(20,150, 3.5,5), MELEE_PATH, LINEAR_DELAY, gun::Gun::new(Vec::new(), 0., 0, 1, 0, 0.)));},
+            24..=48 => {
                 let mut starting_bullets = Vec::new();
                 starting_bullets.push(BULLET_STRAIGHT);
                 commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Linear, asset_server.load("enemies/basic.png"), health::Health::new(0,150, 0.0, 5), LINEAR_PATH, LINEAR_DELAY, gun::Gun::new_from_blueprint(starting_bullets, GUN_BLUEPRINT_LINEAR)));
             },
-            41..=60 => {
+            49..=73 => {
                 let mut starting_bullets = Vec::new();
                 starting_bullets.push(BULLET_COS_POS);
                 starting_bullets.push(BULLET_COS_NEG);
                 commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Wavy, asset_server.load("enemies/wavy.png"), health::Health::new(150,150, 3.0, 5), WAVY_PATH, LINEAR_DELAY, gun::Gun::new_from_blueprint(starting_bullets, GUN_BLUEPRINT_WAVY)));
             },
-            61..=80 => {
+            74..=95 => {
                 let mut starting_bullets = Vec::new();
                 starting_bullets.push(BULLET_DAIG_NEG_0);
                 starting_bullets.push(BULLET_DAIG_NEG_1);
@@ -275,7 +275,7 @@ fn spawn_wave_box(wave_size: u32, asset_server: &mut Res<AssetServer>, commands:
                 starting_bullets.push(BULLET_DAIG_POS_1);
                 commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spammer, asset_server.load("enemies/spammer.png"), health::Health::new(100,150, 3.0, 5), SPAMMER_PATH, SPAMMER_DELAY, gun::Gun::new_from_blueprint(starting_bullets, GUN_BLUEPRINT_SPAMMER)));
             },
-            81..=100 => {
+            96..=100 => {
                 commands.spawn(EnemyBundle::new(spawn_x, spawn_y, EnemyType::Spawner, asset_server.load("enemies/spawner.png"), health::Health::new(200,250, 3.0, 5), SPAWNER_PATH, SPAWNER_DELAY, gun::Gun::new(Vec::new(), 0., 0, 1, 1000, 2.0)));
             },
             _ => ()
@@ -304,7 +304,8 @@ pub fn wave_manager(
     mut timer: ResMut<WaveTimer>,
     time: Res<Time>,
     game_time: Res<GameTimer>,
-    mut asset_server: Res<AssetServer>
+    mut asset_server: Res<AssetServer>,
+    mut score_board: ResMut<ScoreBoard>
 )
 {
     timer.0.tick(time.delta());
@@ -318,9 +319,9 @@ pub fn wave_manager(
         let size = WAVE_SIZE * (minutes_elapsed + 1.) as u32; // wave size * minutes elapsed
         spawn_wave_box(size, &mut asset_server, &mut commands);
 
-        println!("Spawned wave {}, next interval: {}, Real-Elapsed: {} ", size, dur, game_time.0.elapsed_secs());
-
         timer.0.reset();
+
+        score_board.increment_wave();
     }
 
 }

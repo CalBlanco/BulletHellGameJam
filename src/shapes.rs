@@ -1,4 +1,4 @@
-use std::{f32::consts::PI, time::Duration};
+use std::time::Duration;
 
 use bevy::prelude::*;
 
@@ -167,7 +167,7 @@ impl ShapeGun {
                     let points = generate_triangle(p0, p1, p2, bullet_count / 3);
                     vec.extend(points);
                 },
-                _ => {}
+                
             }
         }
 

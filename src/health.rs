@@ -85,6 +85,7 @@ impl Health {
 
     pub fn get_recharge(&self) -> i64 { self.shield_recharge }
  
+    pub fn set_health(&mut self, health: i64){ self.health = health; }
 
   
 }

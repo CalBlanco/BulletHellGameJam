@@ -1,8 +1,7 @@
 use bevy::{math::bounding::{Aabb2d, BoundingCircle, IntersectsVolume}, prelude::*};
 use bevy_hanabi::{EffectProperties, EffectSpawner};
-use rand::Rng;
 
-use crate::{enemy, game::ScoreBoard, gun::{self, BulletBlueprint}, health, player::{self, PlayerControlled}, shapes};
+use crate::{enemy, game::ScoreBoard, gun, health, player::{self, PlayerControlled}};
 use super::{T_BOUND, B_BOUND, L_BOUND, R_BOUND};
 
 const BULLET_DEATH: f32 = 5.;
@@ -150,7 +149,7 @@ pub fn apply_collision_damage(
     mut commands: Commands,
     mut score_events: EventWriter<ScoreEvent>,
     enemy_query: Query<(Entity, &enemy::Enemy, &Transform), (With<enemy::Collider>, Without<EffectProperties>)>,
-    mut gun_query: Query<(&mut gun::Gun, &mut shapes::ShapeGun), With<player::PlayerControlled>>,
+    //gun_query: Query<(&mut gun::Gun, &mut shapes::ShapeGun), With<player::PlayerControlled>>,
     mut effect: Query<(
         &mut EffectProperties,
         &mut EffectSpawner,
@@ -231,7 +230,7 @@ pub fn update_score(
     if !score_events.is_empty() {
         for score in score_events.read() {
             
-            println!("Adding Score: {} - {} ", score.0 ,scoreboard.get_score());
+            
 
             scoreboard.add_score(score.0);
             scoreboard.add_mul(score.1);

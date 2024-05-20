@@ -1,4 +1,4 @@
-use bevy::{math::bounding::{Aabb2d, BoundingCircle, IntersectsVolume}, prelude::*};
+use bevy::{math::bounding::Aabb2d, prelude::*};
 use rand::Rng;
 
 use super::B_BOUND;
@@ -18,7 +18,6 @@ pub enum PowerUpTypes {
     HealthIncrease,
     ShieldIncrease,
     ShieldRegen,
-    ShieldRegenTime
 }
 
 impl PowerUpTypes {
@@ -32,10 +31,10 @@ impl PowerUpTypes {
             PowerUpTypes::ShapeReloadTime => "power_ups/shapes/shape_reload_speed.png",
             PowerUpTypes::AddRandomShape => "power_ups/shapes/shape_random.png",
             PowerUpTypes::ShapeSize => "power_ups/shapes/shape_inc_size.png",
-            PowerUpTypes::HealthIncrease => "power_ups/red_base.png",
-            PowerUpTypes::ShieldIncrease => "power_ups/red_base.png",
-            PowerUpTypes::ShieldRegen => "power_ups/red_base.png",
-            PowerUpTypes::ShieldRegenTime => "power_ups/red_base.png",
+            PowerUpTypes::HealthIncrease => "power_ups/health/health_increase.png",
+            PowerUpTypes::ShieldIncrease => "power_ups/health/shield_increase.png",
+            PowerUpTypes::ShieldRegen => "power_ups/health/shield_speed.png",
+            
         }
     }
 }
@@ -54,13 +53,13 @@ pub fn spawn_powerup_wave(coms: &mut Commands, assets: &Res<AssetServer>){
     // a random shape power up,
     // and a random health power up 
 
-    let bullet_pups = vec![PowerUpTypes::BulletAmmo, PowerUpTypes::BulletDamage, PowerUpTypes::BulletSpeed, PowerUpTypes::AddRandomBullet];
-    let shape_pups = vec![PowerUpTypes::ShapeAmmo, PowerUpTypes::ShapeReloadTime, PowerUpTypes::ShapeSize, PowerUpTypes::AddRandomShape];
-    let health_pups = vec![PowerUpTypes::HealthIncrease, PowerUpTypes::ShieldIncrease, PowerUpTypes::ShieldRegen, PowerUpTypes::ShieldRegenTime];
+    let bullet_pups = vec![PowerUpTypes::BulletAmmo, PowerUpTypes::BulletDamage, PowerUpTypes::BulletSpeed, PowerUpTypes::BulletAmmo, PowerUpTypes::BulletDamage, PowerUpTypes::BulletSpeed,  PowerUpTypes::AddRandomBullet];
+    let shape_pups = vec![PowerUpTypes::ShapeAmmo, PowerUpTypes::ShapeReloadTime, PowerUpTypes::ShapeSize, PowerUpTypes::ShapeAmmo, PowerUpTypes::ShapeReloadTime, PowerUpTypes::ShapeSize, PowerUpTypes::AddRandomShape];
+    let health_pups = vec![PowerUpTypes::HealthIncrease, PowerUpTypes::ShieldIncrease, PowerUpTypes::ShieldRegen];
 
     let bup = rand::thread_rng().gen_range(0..(bullet_pups.len()));
-    let sup = rand::thread_rng().gen_range(0..(bullet_pups.len()));
-    let hup = rand::thread_rng().gen_range(0..(bullet_pups.len()));
+    let sup = rand::thread_rng().gen_range(0..(shape_pups.len()));
+    let hup = rand::thread_rng().gen_range(0..(health_pups.len()));
 
     let bup = bullet_pups[bup];
     let sup = shape_pups[sup];
@@ -111,7 +110,7 @@ pub fn handle_powerup_collision(
         for (ent, power_up, transform) in &power_ups {
             if did_contact {break;}
             let collision = bullet::bullet_collision(Aabb2d::new(p_transform.translation.truncate(), Vec2::new(16.,16.)), Aabb2d::new(transform.translation.truncate(), Vec2::new(16.,16.)));
-            if let Some(col) = collision {
+            if let Some(_) = collision {
                 match power_up {
                     PowerUpTypes::BulletAmmo => {
                         let cur = gun.get_max_ammo();
@@ -145,13 +144,13 @@ pub fn handle_powerup_collision(
                     },
                     PowerUpTypes::AddRandomShape => {
                         let s_choice = rand::thread_rng().gen_range(0..3);
-                        let x_off = rand::thread_rng().gen_range(0. .. 100.);
-                        let y_off = rand::thread_rng().gen_range(0. .. 100.);
+                        let x_off = rand::thread_rng().gen_range(-200. .. 200.);
+                        let y_off = rand::thread_rng().gen_range(0. .. 150.);
 
                         let offset = (x_off, y_off);
                         
-                        let x_scale = rand::thread_rng().gen_range(1. .. 3.0);
-                        let y_scale = rand::thread_rng().gen_range(1. .. 3.0);
+                        let x_scale = rand::thread_rng().gen_range(0.5 .. 3.0);
+                        let y_scale = rand::thread_rng().gen_range(0.5 .. 3.0);
                         let scale = (x_scale, y_scale);
                         
                         match s_choice{
@@ -171,8 +170,8 @@ pub fn handle_powerup_collision(
                         shape_gun.set_size(cur * 1.05);
                     },
                     PowerUpTypes::HealthIncrease => {
-                        let cur = health.get_max_health();
-                        health.set_max_health(cur + 100);
+                        let cur = health.get_health();
+                        health.set_health(cur + 100);
                     },
                     PowerUpTypes::ShieldIncrease => {
                         let cur = health.get_max_shield();
@@ -182,7 +181,7 @@ pub fn handle_powerup_collision(
                         let cur = health.get_recharge();
                         health.set_recharge(cur + 50);
                     },
-                    PowerUpTypes::ShieldRegenTime => {},
+                    
                 }
             
                 coms.entity(ent).despawn();

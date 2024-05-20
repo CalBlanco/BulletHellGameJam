@@ -102,9 +102,9 @@ impl Gun {
         self.reload_stopwatch.finished()
     }
 
-    pub fn set_reload_delay(&mut self, time: f32){
+    /* pub fn set_reload_delay(&mut self, time: f32){
         self.reload_stopwatch.set_duration(Duration::from_secs_f32(time))
-    }
+    } */
 
     pub fn reload(&mut  self){
         self.ammo = self.max_ammo;
